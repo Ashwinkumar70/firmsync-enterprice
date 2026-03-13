@@ -82,16 +82,17 @@ export const LeaveRequests: React.FC = () => {
       }).select().single();
 
       // Create leave request
-      await supabase.from('leave_requests').insert({
+      const { error: leaveError } = await supabase.from('leave_requests').insert({
         employee_id: user.id,
         type: data.type,
         start_date: data.start_date,
         end_date: data.end_date,
-        days_count: daysCount,
         reason: data.reason ?? null,
         status: 'pending',
         workflow_id: wf?.id,
       });
+
+      if (leaveError) throw leaveError;
 
       // Add notification
       await supabase.from('notifications').insert({
@@ -106,6 +107,9 @@ export const LeaveRequests: React.FC = () => {
       reset();
       setShowForm(false);
       fetchLeaves();
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      alert('Failed to submit leave request: ' + (error.message || 'Unknown error'));
     } finally {
       setSubmitting(false);
     }
