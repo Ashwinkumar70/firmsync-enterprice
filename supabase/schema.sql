@@ -54,6 +54,9 @@ CREATE TABLE IF NOT EXISTS public.users (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
+CREATE INDEX IF NOT EXISTS idx_users_dept ON public.users(department_id);
+
 -- ============================================================
 -- WORKFLOWS TABLE
 -- ============================================================
@@ -116,6 +119,8 @@ CREATE TABLE IF NOT EXISTS public.leave_requests (
 
 CREATE INDEX IF NOT EXISTS idx_leave_employee ON public.leave_requests(employee_id);
 CREATE INDEX IF NOT EXISTS idx_leave_status ON public.leave_requests(status);
+CREATE INDEX IF NOT EXISTS idx_leave_workflow ON public.leave_requests(workflow_id);
+CREATE INDEX IF NOT EXISTS idx_leave_status_date ON public.leave_requests(status, created_at DESC);
 
 -- ============================================================
 -- PROJECTS TABLE
@@ -137,6 +142,8 @@ CREATE TABLE IF NOT EXISTS public.projects (
 
 CREATE INDEX IF NOT EXISTS idx_projects_owner ON public.projects(owner_id);
 CREATE INDEX IF NOT EXISTS idx_projects_manager ON public.projects(manager_id);
+CREATE INDEX IF NOT EXISTS idx_projects_dept ON public.projects(department_id);
+CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
 
 -- ============================================================
 -- PROJECT UPDATES TABLE
@@ -174,6 +181,7 @@ CREATE TABLE IF NOT EXISTS public.support_tickets (
 
 CREATE INDEX IF NOT EXISTS idx_tickets_reporter ON public.support_tickets(reporter_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON public.support_tickets(status);
+CREATE INDEX IF NOT EXISTS idx_tickets_category ON public.support_tickets(category);
 
 -- ============================================================
 -- EMPLOYEE SKILLS TABLE
@@ -229,6 +237,7 @@ CREATE TABLE IF NOT EXISTS public.purchase_requests (
 );
 
 CREATE INDEX IF NOT EXISTS idx_purchase_requester ON public.purchase_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_purchase_status ON public.purchase_requests(status);
 
 -- ============================================================
 -- PAYROLL RECORDS TABLE (stub)

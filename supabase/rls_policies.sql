@@ -203,7 +203,13 @@ CREATE POLICY "tickets_reporter_insert" ON public.support_tickets
   FOR INSERT WITH CHECK (reporter_id = auth.uid());
 
 CREATE POLICY "tickets_manager_view" ON public.support_tickets
-  FOR SELECT USING (get_my_role() IN ('manager', 'hr', 'admin'));
+  FOR SELECT USING (
+    get_my_role() = 'manager' AND EXISTS (
+      SELECT 1 FROM public.users u 
+      WHERE u.id = reporter_id AND u.department_id = get_my_department()
+    )
+    OR get_my_role() IN ('hr', 'admin')
+  );
 
 CREATE POLICY "tickets_manager_update" ON public.support_tickets
   FOR UPDATE USING (get_my_role() IN ('manager', 'hr', 'admin'));

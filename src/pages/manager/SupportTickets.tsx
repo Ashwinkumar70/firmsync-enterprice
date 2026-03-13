@@ -3,7 +3,7 @@ import { PageWrapper } from '../../components/layout/PageWrapper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { SupportTicket } from '../../lib/types';
-import { Ticket, Clock, User, Filter } from 'lucide-react';
+import { Ticket, Clock, Filter } from 'lucide-react';
 
 type TicketWithReporter = SupportTicket & { reporter: { full_name: string; email: string } };
 
@@ -23,9 +23,7 @@ export const SupportTickets: React.FC = () => {
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        // Filter by same department as manager
-        const teamTickets = (data as any[]).filter(t => t.reporter?.department_id === user.department_id);
-        setTickets(teamTickets as TicketWithReporter[]);
+        setTickets(data as TicketWithReporter[]);
       }
       setLoading(false);
     };
