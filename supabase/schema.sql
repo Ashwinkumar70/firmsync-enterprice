@@ -301,12 +301,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS users_updated_at ON public.users;
 CREATE TRIGGER users_updated_at BEFORE UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS workflows_updated_at ON public.workflows;
 CREATE TRIGGER workflows_updated_at BEFORE UPDATE ON public.workflows FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS leave_requests_updated_at ON public.leave_requests;
 CREATE TRIGGER leave_requests_updated_at BEFORE UPDATE ON public.leave_requests FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS projects_updated_at ON public.projects;
 CREATE TRIGGER projects_updated_at BEFORE UPDATE ON public.projects FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS support_tickets_updated_at ON public.support_tickets;
 CREATE TRIGGER support_tickets_updated_at BEFORE UPDATE ON public.support_tickets FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS purchase_requests_updated_at ON public.purchase_requests;
 CREATE TRIGGER purchase_requests_updated_at BEFORE UPDATE ON public.purchase_requests FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+
+DROP TRIGGER IF EXISTS career_goals_updated_at ON public.career_goals;
 CREATE TRIGGER career_goals_updated_at BEFORE UPDATE ON public.career_goals FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
 
 -- ============================================================
