@@ -1,0 +1,132 @@
+import React, { Suspense, lazy } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '../contexts/AuthContext';
+import { ProtectedRoute, RoleRedirect } from './ProtectedRoute';
+
+// Portal selector & login pages (Keep eager for fast login experience)
+import { PortalSelector }  from '../pages/PortalSelector';
+import { AdminLogin }      from '../pages/login/AdminLogin';
+import { ManagerLogin }    from '../pages/login/ManagerLogin';
+import { HRLogin }         from '../pages/login/HRLogin';
+import { EmployeeLogin }   from '../pages/login/EmployeeLogin';
+
+// Employee pages (Lazy)
+const EmployeeDashboard = lazy(() => import('../pages/employee/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
+const LeaveRequests     = lazy(() => import('../pages/employee/LeaveRequests').then(m => ({ default: m.LeaveRequests })));
+const ProjectSubmission = lazy(() => import('../pages/employee/ProjectSubmission').then(m => ({ default: m.ProjectSubmission })));
+const SupportTickets    = lazy(() => import('../pages/employee/SupportTickets').then(m => ({ default: m.SupportTickets })));
+const PurchaseRequests  = lazy(() => import('../pages/employee/PurchaseRequests').then(m => ({ default: m.PurchaseRequests })));
+const SkillProfile      = lazy(() => import('../pages/employee/SkillProfile').then(m => ({ default: m.SkillProfile })));
+const CareerGoals       = lazy(() => import('../pages/employee/CareerGoals').then(m => ({ default: m.CareerGoals })));
+const Achievements      = lazy(() => import('../pages/employee/Achievements').then(m => ({ default: m.Achievements })));
+const EmployeeProfile   = lazy(() => import('../pages/employee/EmployeeProfile').then(m => ({ default: m.EmployeeProfile })));
+
+// Manager pages (Lazy)
+const ManagerDashboard = lazy(() => import('../pages/manager/ManagerDashboard').then(m => ({ default: m.ManagerDashboard })));
+const WorkflowReview   = lazy(() => import('../pages/manager/WorkflowReview').then(m => ({ default: m.WorkflowReview })));
+const TeamMembers      = lazy(() => import('../pages/manager/TeamMembers').then(m => ({ default: m.TeamMembers })));
+const LeaveApprovals   = lazy(() => import('../pages/manager/LeaveApprovals').then(m => ({ default: m.LeaveApprovals })));
+const ProjectFeedback  = lazy(() => import('../pages/manager/ProjectFeedback').then(m => ({ default: m.ProjectFeedback })));
+const TeamAnalytics    = lazy(() => import('../pages/manager/TeamAnalytics').then(m => ({ default: m.TeamAnalytics })));
+const ManagerTickets   = lazy(() => import('../pages/manager/SupportTickets').then(m => ({ default: m.SupportTickets })));
+
+// HR pages (Lazy)
+const HRDashboard       = lazy(() => import('../pages/hr/HRDashboard').then(m => ({ default: m.HRDashboard })));
+const EmployeeRecords   = lazy(() => import('../pages/hr/EmployeeRecords').then(m => ({ default: m.EmployeeRecords })));
+const Payroll           = lazy(() => import('../pages/hr/Payroll').then(m => ({ default: m.Payroll })));
+const HRLeaveApprovals  = lazy(() => import('../pages/hr/HRLeaveApprovals').then(m => ({ default: m.HRLeaveApprovals })));
+
+// Admin pages (Lazy)
+const AdminDashboard  = lazy(() => import('../pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const UserManagement  = lazy(() => import('../pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
+const Departments     = lazy(() => import('../pages/admin/Departments').then(m => ({ default: m.Departments })));
+const LeaveManagement = lazy(() => import('../pages/admin/LeaveManagement').then(m => ({ default: m.LeaveManagement })));
+
+// Placeholder for scaffolded-but-not-yet-implemented pages
+import { StubPage } from '../pages/StubPage';
+
+const LoadingFallback = () => (
+  <div style={{ 
+    height: '100vh', width: '100vw', display: 'flex', alignItems: 'center', 
+    justifyContent: 'center', background: 'var(--bg-portal)', gap: 12,
+    flexDirection: 'column'
+  }}>
+    <div className="spinner dark" />
+    <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Loading Portal...</span>
+  </div>
+);
+
+export const AppRouter: React.FC = () => (
+  <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <AuthProvider>
+      <Suspense fallback={<LoadingFallback />}>
+        <Routes>
+
+          {/* ── Portal Selector & Role-Specific Login Pages ──────────── */}
+          <Route path="/login"          element={<PortalSelector />} />
+          <Route path="/login/admin"    element={<AdminLogin />} />
+          <Route path="/login/manager"  element={<ManagerLogin />} />
+          <Route path="/login/hr"       element={<HRLogin />} />
+          <Route path="/login/employee" element={<EmployeeLogin />} />
+
+          {/* Root → dispatch authenticated user to their portal dashboard */}
+          <Route path="/" element={<RoleRedirect />} />
+
+          {/* ── EMPLOYEE PORTAL ─────────────────────────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
+            <Route path="/employee" element={<Navigate to="/employee/dashboard" replace />} />
+            <Route path="/employee/dashboard"    element={<EmployeeDashboard />} />
+            <Route path="/employee/leave"        element={<LeaveRequests />} />
+            <Route path="/employee/projects"     element={<ProjectSubmission />} />
+            <Route path="/employee/tickets"      element={<SupportTickets />} />
+            <Route path="/employee/purchases"    element={<PurchaseRequests />} />
+            <Route path="/employee/skills"       element={<SkillProfile />} />
+            <Route path="/employee/goals"        element={<CareerGoals />} />
+            <Route path="/employee/achievements" element={<Achievements />} />
+            <Route path="/employee/profile"      element={<EmployeeProfile />} />
+          </Route>
+
+          {/* ── MANAGER PORTAL ──────────────────────────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['manager']} />}>
+            <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
+            <Route path="/manager/dashboard"      element={<ManagerDashboard />} />
+            <Route path="/manager/workflows"      element={<WorkflowReview />} />
+            <Route path="/manager/team-analytics" element={<TeamAnalytics />} />
+            <Route path="/manager/leave"          element={<LeaveApprovals />} />
+            <Route path="/manager/projects"       element={<ProjectFeedback />} />
+            <Route path="/manager/team"           element={<TeamMembers />} />
+            <Route path="/manager/tickets"        element={<ManagerTickets />} />
+          </Route>
+
+          {/* ── HR PORTAL ───────────────────────────────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['hr']} />}>
+            <Route path="/hr" element={<Navigate to="/hr/dashboard" replace />} />
+            <Route path="/hr/dashboard"        element={<HRDashboard />} />
+            <Route path="/hr/leave-approvals"  element={<HRLeaveApprovals />} />
+            <Route path="/hr/employee-records" element={<EmployeeRecords />} />
+            <Route path="/hr/payroll"          element={<Payroll />} />
+            <Route path="/hr/career"           element={<StubPage title="Career Development" subtitle="Employee growth tracking and plans" />} />
+            <Route path="/hr/reports"          element={<StubPage title="HR Reports" subtitle="Analytics and workforce reports" />} />
+          </Route>
+
+          {/* ── ADMIN PORTAL ────────────────────────────────────────── */}
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
+            <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+            <Route path="/admin/dashboard"      element={<AdminDashboard />} />
+            <Route path="/admin/users"          element={<UserManagement />} />
+            <Route path="/admin/departments"    element={<Departments />} />
+            <Route path="/admin/leave"          element={<LeaveManagement />} />
+            <Route path="/admin/system-monitor" element={<StubPage title="System Monitor" subtitle="Real-time system health and usage metrics" />} />
+            <Route path="/admin/workflows"      element={<StubPage title="Workflow Configuration" subtitle="Set routing rules and approval chains" />} />
+            <Route path="/admin/notifications"  element={<StubPage title="Notifications" subtitle="Manage system notification settings" />} />
+            <Route path="/admin/settings"       element={<StubPage title="Settings" subtitle="Global application settings" />} />
+          </Route>
+
+          {/* Any unmatched path → root (role-redirect kicks in) */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
+      </Suspense>
+    </AuthProvider>
+  </BrowserRouter>
+);
