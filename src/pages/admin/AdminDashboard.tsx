@@ -12,32 +12,54 @@ export const AdminDashboard: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [workflows, setWorkflows] = useState<{ status: string; created_at: string }[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [counts, setCounts] = useState({
+    totalUsers: 0,
+    activeUsers: 0,
+    totalWorkflows: 0,
+    approvedWorkflows: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [u, w, d] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
-        supabase.from('workflows').select('status, created_at').order('created_at', { ascending: false }).limit(200),
+      const [u, w, d, totalU, activeU, totalW, approvedW] = await Promise.all([
+        supabase.from('users').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('workflows').select('status, created_at').order('created_at', { ascending: false }).limit(500),
         supabase.from('departments').select('*'),
+        supabase.from('users').select('id', { count: 'exact', head: true }),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).in('status', ['approved', 'completed']),
       ]);
       setUsers((u.data ?? []) as UserProfile[]);
       setWorkflows(w.data ?? []);
       setDepartments((d.data ?? []) as Department[]);
+      setCounts({
+        totalUsers: totalU.count ?? 0,
+        activeUsers: activeU.count ?? 0,
+        totalWorkflows: totalW.count ?? 0,
+        approvedWorkflows: approvedW.count ?? 0
+      });
       setLoading(false);
     };
     load();
   }, []);
 
-  // Monthly workflow trend
+  // Monthly workflow trend (group by day for the last 30 days or so)
   const trendData = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i) * 5);
-    const slice = workflows.slice(i * 10, i * 10 + 10);
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() - (6 - i));
+    const dayStr = targetDate.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+    
+    const dayWorkflows = workflows.filter(w => {
+      const d = new Date(w.created_at);
+      return d.getDate() === targetDate.getDate() && d.getMonth() === targetDate.getMonth();
+    });
+
     return {
-      day: d.toLocaleDateString('default', { month: 'short', day: 'numeric' }),
-      total: slice.length,
-      approved: slice.filter(w => w.status === 'approved').length,
+      day: dayStr,
+      total: dayWorkflows.length,
+      approved: dayWorkflows.filter(w => w.status === 'approved' || w.status === 'completed').length,
     };
   });
 
@@ -47,10 +69,7 @@ export const AdminDashboard: React.FC = () => {
     count: users.filter(u => u.role === role).length,
   }));
 
-  const activeUsers = users.filter(u => u.is_active).length;
-  const totalWorkflows = workflows.length;
-  const approvedWf = workflows.filter(w => w.status === 'approved' || w.status === 'completed').length;
-  const approvalRate = totalWorkflows > 0 ? Math.round((approvedWf / totalWorkflows) * 100) : 0;
+  const approvalRate = counts.totalWorkflows > 0 ? Math.round((counts.approvedWorkflows / counts.totalWorkflows) * 100) : 0;
 
   return (
     <PageWrapper pageTitle="Admin Dashboard">
@@ -63,18 +82,18 @@ export const AdminDashboard: React.FC = () => {
       <div className="ai-insight" style={{ marginBottom: 24 }}>
         <div className="ai-insight-header"><Zap size={14} />System Intelligence</div>
         <div className="ai-insight-text">
-          System approval rate is <strong>{approvalRate}%</strong> across {totalWorkflows} total workflows.
+          System approval rate is <strong>{approvalRate}%</strong> across {counts.totalWorkflows} total workflows.
           {approvalRate < 60 ? ' ⚠️ Consider reviewing workflow routing rules to improve approval efficiency.' : ' ✅ System is operating at healthy approval rates.'}
-          {' '}Active users: <strong>{activeUsers}</strong> of <strong>{users.length}</strong> total accounts.
+          {' '}Active users: <strong>{counts.activeUsers}</strong> of <strong>{counts.totalUsers}</strong> total accounts.
         </div>
       </div>
 
       {/* KPIs */}
       <div className="kpi-grid" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Total Users', value: users.length, icon: <Users size={20} />, color: 'blue' },
-          { label: 'Active Users', value: activeUsers, icon: <CheckCircle size={20} />, color: 'green' },
-          { label: 'Total Workflows', value: totalWorkflows, icon: <Workflow size={20} />, color: 'purple' },
+          { label: 'Total Users', value: counts.totalUsers, icon: <Users size={20} />, color: 'blue' },
+          { label: 'Active Users', value: counts.activeUsers, icon: <CheckCircle size={20} />, color: 'green' },
+          { label: 'Total Workflows', value: counts.totalWorkflows, icon: <Workflow size={20} />, color: 'purple' },
           { label: 'Approval Rate', value: `${approvalRate}%`, icon: <TrendingUp size={20} />, color: 'orange' },
           { label: 'Departments', value: departments.length, icon: <Settings size={20} />, color: 'red' },
         ].map(k => (

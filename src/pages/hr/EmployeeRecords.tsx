@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { supabase } from '../../lib/supabase';
 import type { UserProfile, Department, EmployeeSkill } from '../../lib/types';
-import { Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Wallet } from 'lucide-react';
 
 export const EmployeeRecords: React.FC = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);
@@ -90,12 +90,16 @@ export const EmployeeRecords: React.FC = () => {
                     <div style={{ padding: '0 24px 20px', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
                       <div className="form-row" style={{ marginTop: 16 }}>
                         <div>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Join Date</div>
-                          <div style={{ fontSize: 13.5 }}>{u.hire_date ? new Date(u.hire_date).toLocaleDateString() : '—'}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Employee ID</div>
+                          <div style={{ fontSize: 13.5 }}>{u.employee_id_string || u.id.slice(0, 8)}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Phone</div>
-                          <div style={{ fontSize: 13.5 }}>{u.phone ?? '—'}</div>
+                          <div style={{ fontSize: 13.5 }}>{u.phone ?? 'Not provided'}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 4 }}>Location</div>
+                          <div style={{ fontSize: 13.5 }}>{u.location ?? 'Not provided'}</div>
                         </div>
                       </div>
                       {userSkills.length > 0 && (

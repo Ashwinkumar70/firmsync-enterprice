@@ -48,6 +48,8 @@ CREATE TABLE IF NOT EXISTS public.users (
   department_id UUID REFERENCES public.departments(id),
   avatar_url TEXT,
   phone TEXT,
+  location TEXT,
+  employee_id_string TEXT,
   hire_date DATE,
   is_active BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

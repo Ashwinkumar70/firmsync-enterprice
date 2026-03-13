@@ -16,6 +16,8 @@ export interface UserProfile {
   department_id: string | null;
   avatar_url: string | null;
   phone: string | null;
+  location: string | null;
+  employee_id_string: string | null;
   hire_date: string | null;
   is_active: boolean;
   created_at: string;

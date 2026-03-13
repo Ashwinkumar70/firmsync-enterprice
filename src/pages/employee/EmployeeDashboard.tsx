@@ -33,29 +33,60 @@ const quickActions = [
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
-  const [leaveCount, setLeaveCount] = useState(0);
-  const [ticketCount, setTicketCount] = useState(0);
+  const [counts, setCounts] = useState({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    rejected: 0,
+    openLeave: 0,
+    openTickets: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
       if (!user) return;
-      const [wf, lv, tc] = await Promise.all([
+      
+      const [
+        wf, 
+        total, 
+        approved, 
+        pending, 
+        rejected, 
+        lv, 
+        tc
+      ] = await Promise.all([
         supabase.from('workflows').select('*').eq('created_by', user.id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('leave_requests').select('id', { count: 'exact' }).eq('employee_id', user.id).neq('status', 'approved'),
-        supabase.from('support_tickets').select('id', { count: 'exact' }).eq('reporter_id', user.id).eq('status', 'open'),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('created_by', user.id),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('created_by', user.id).in('status', ['approved', 'completed']),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('created_by', user.id).in('status', ['created', 'assigned', 'under_review', 'pending']),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('created_by', user.id).eq('status', 'rejected'),
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('employee_id', user.id).in('status', ['pending', 'manager_approved', 'hr_approved']),
+        supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('reporter_id', user.id).eq('status', 'open'),
       ]);
+
       setWorkflows((wf.data ?? []) as Workflow[]);
-      setLeaveCount(lv.count ?? 0);
-      setTicketCount(tc.count ?? 0);
+      setCounts({
+        total: total.count ?? 0,
+        approved: approved.count ?? 0,
+        pending: pending.count ?? 0,
+        rejected: rejected.count ?? 0,
+        openLeave: lv.count ?? 0,
+        openTickets: tc.count ?? 0
+      });
       setLoading(false);
     };
     load();
   }, [user]);
 
-  const approved = workflows.filter(w => w.status === 'approved' || w.status === 'completed').length;
-  const pending = workflows.filter(w => ['created','assigned','under_review'].includes(w.status)).length;
-  const rejected = workflows.filter(w => w.status === 'rejected').length;
+  const kpis = [
+    { label: 'Total Requests', value: counts.total, icon: <TrendingUp size={20} />, color: 'blue' },
+    { label: 'Approved', value: counts.approved, icon: <CheckCircle size={20} />, color: 'green' },
+    { label: 'Pending', value: counts.pending, icon: <Clock size={20} />, color: 'orange' },
+    { label: 'Rejected', value: counts.rejected, icon: <XCircle size={20} />, color: 'red' },
+    { label: 'Open Leave', value: counts.openLeave, icon: <Calendar size={20} />, color: 'purple' },
+    { label: 'Open Tickets', value: counts.openTickets, icon: <AlertCircle size={20} />, color: 'blue' },
+  ];
 
   return (
     <PageWrapper pageTitle="Employee Dashboard">
@@ -67,14 +98,7 @@ export const EmployeeDashboard: React.FC = () => {
 
       {/* KPI row */}
       <div className="kpi-grid">
-        {[
-          { label: 'Total Requests', value: workflows.length, icon: <TrendingUp size={20} />, color: 'blue' },
-          { label: 'Approved', value: approved, icon: <CheckCircle size={20} />, color: 'green' },
-          { label: 'Pending', value: pending, icon: <Clock size={20} />, color: 'orange' },
-          { label: 'Rejected', value: rejected, icon: <XCircle size={20} />, color: 'red' },
-          { label: 'Open Leave', value: leaveCount, icon: <Calendar size={20} />, color: 'purple' },
-          { label: 'Open Tickets', value: ticketCount, icon: <AlertCircle size={20} />, color: 'blue' },
-        ].map(k => (
+        {kpis.map(k => (
           <div key={k.label} className={`kpi-card ${k.color}`}>
             <div className={`kpi-icon ${k.color}`}>{k.icon}</div>
             <div className="kpi-value">{loading ? '–' : k.value}</div>

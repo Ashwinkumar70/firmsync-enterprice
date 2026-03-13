@@ -8,21 +8,35 @@ export const Payroll: React.FC = () => {
   const [records, setRecords] = useState<(PayrollRecord & { employee?: UserProfile })[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const load = async () => {
+    setLoading(true);
+    const [r, u] = await Promise.all([
+      supabase.from('payroll_records').select('*').order('period_start', { ascending: false }).limit(50),
+      supabase.from('users').select('id, full_name, email'),
+    ]);
+    const usersMap: Record<string, { id: string; full_name: string; email: string }> = {};
+    (u.data ?? []).forEach((p: { id: string; full_name: string; email: string }) => { usersMap[p.id] = p; });
+    const combined = (r.data ?? []).map((rec: PayrollRecord) => ({ ...rec, employee: usersMap[rec.employee_id] }));
+    setRecords(combined as (PayrollRecord & { employee?: UserProfile })[]);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const load = async () => {
-      const [r, u] = await Promise.all([
-        supabase.from('payroll_records').select('*').order('period_start', { ascending: false }).limit(50),
-        supabase.from('users').select('id, full_name, email'),
-      ]);
-      const usersMap: Record<string, { id: string; full_name: string; email: string }> = {};
-      (u.data ?? []).forEach((p: { id: string; full_name: string; email: string }) => { usersMap[p.id] = p; });
-      const combined = (r.data ?? []).map((rec: PayrollRecord) => ({ ...rec, employee: usersMap[rec.employee_id] }));
-      setRecords(combined as (PayrollRecord & { employee?: UserProfile })[]);
-      setLoading(false);
-    };
     load();
   }, []);
 
+  const handleAction = async (id: string, newStatus: string) => {
+    const { error } = await supabase.from('payroll_records').update({ 
+      status: newStatus,
+      processed_at: newStatus === 'paid' ? new Date().toISOString() : null
+    }).eq('id', id);
+    
+    if (error) {
+      alert('Error updating payroll: ' + error.message);
+    } else {
+      load();
+    }
+  };
 
   const STATUS_BADGE: Record<string, string> = { draft: 'badge-gray', processed: 'badge-blue', paid: 'badge-green' };
 
@@ -37,51 +51,64 @@ export const Payroll: React.FC = () => {
 
       <div className="kpi-grid" style={{ marginBottom: 24 }}>
         <div className="kpi-card blue">
-          <div className="kpi-icon blue"><DollarSign size={20} /></div>
+          <div className="kpi-icon blue">₹</div>
           <div className="kpi-value">{records.length}</div>
           <div className="kpi-label">Total Records</div>
         </div>
         <div className="kpi-card green">
-          <div className="kpi-icon green"><DollarSign size={20} /></div>
-          <div className="kpi-value">${totalNet.toLocaleString()}</div>
+          <div className="kpi-icon green">₹</div>
+          <div className="kpi-value">₹{totalNet.toLocaleString('en-IN')}</div>
           <div className="kpi-label">Total Paid Out</div>
         </div>
         <div className="kpi-card orange">
-          <div className="kpi-icon orange"><DollarSign size={20} /></div>
-          <div className="kpi-value">{records.filter(r => r.status === 'draft').length}</div>
-          <div className="kpi-label">Pending Processing</div>
+          <div className="kpi-icon orange">₹</div>
+          <div className="kpi-value">{records.filter(r => r.status !== 'paid').length}</div>
+          <div className="kpi-label">Pending Payment</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-header">
-          <div className="card-title">Payroll Records</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Read-only view — payroll integration stub</div>
+          <div className="card-title">Employee Salary List</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Indian Rupee (₹) denomination</div>
         </div>
-        {loading ? (
+        {loading && records.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner dark" style={{ margin: '0 auto' }} /></div>
         ) : records.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-state-icon"><DollarSign size={28} /></div>
+            <div className="empty-state-icon">₹</div>
             <div className="empty-state-title">No payroll records</div>
-            <div className="empty-state-text">Payroll records will appear here once set up by the administrator</div>
+            <div className="empty-state-text">Payroll records will appear here once generated.</div>
           </div>
         ) : (
-          <div className="table-wrapper" style={{ border: 'none' }}>
+          <div className="table-wrapper" style={{ border: 'none', overflowX: 'auto' }}>
             <table className="data-table">
-              <thead><tr><th>Employee</th><th>Period</th><th>Base Salary</th><th>Bonuses</th><th>Deductions</th><th>Net Pay</th><th>Status</th></tr></thead>
+              <thead><tr><th>Employee</th><th>Period</th><th>Base Salary</th><th>Bonuses</th><th>Deductions</th><th>Net Pay</th><th>Status</th><th>Actions</th></tr></thead>
               <tbody>
                 {records.map(r => (
                   <tr key={r.id}>
                     <td style={{ fontWeight: 600 }}>{r.employee?.full_name ?? r.employee?.email ?? '—'}</td>
-                    <td style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                    <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                       {new Date(r.period_start).toLocaleDateString()} – {new Date(r.period_end).toLocaleDateString()}
                     </td>
-                    <td>${r.base_salary.toLocaleString()}</td>
-                    <td style={{ color: 'var(--success)' }}>+${r.bonuses.toLocaleString()}</td>
-                    <td style={{ color: 'var(--danger)' }}>-${r.deductions.toLocaleString()}</td>
-                    <td style={{ fontWeight: 700 }}>${r.net_pay.toLocaleString()}</td>
+                    <td>₹{r.base_salary.toLocaleString('en-IN')}</td>
+                    <td style={{ color: 'var(--success)' }}>+₹{r.bonuses.toLocaleString('en-IN')}</td>
+                    <td style={{ color: 'var(--danger)' }}>-₹{r.deductions.toLocaleString('en-IN')}</td>
+                    <td style={{ fontWeight: 700 }}>₹{r.net_pay.toLocaleString('en-IN')}</td>
                     <td><span className={`badge ${STATUS_BADGE[r.status]}`}>{r.status}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {r.status === 'draft' && (
+                          <button className="btn btn-primary btn-sm" onClick={() => handleAction(r.id, 'processed')}>Process</button>
+                        )}
+                        {r.status === 'processed' && (
+                          <button className="btn btn-success btn-sm" onClick={() => handleAction(r.id, 'paid')}>Approve & Pay</button>
+                        )}
+                        {r.status === 'paid' && (
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>No actions</span>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

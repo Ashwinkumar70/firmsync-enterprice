@@ -62,8 +62,8 @@ export const EmployeeProfile: React.FC = () => {
             <div className="card-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               {[
                 { label: 'Role', value: user.role, icon: <Shield size={16} /> },
-                { label: 'Department', value: user.department?.name || 'Accounting', icon: <Briefcase size={16} /> },
-                { label: 'Employee ID', value: user.id.slice(0, 8), icon: <User size={16} /> },
+                { label: 'Department', value: user.department?.name || 'FirmSync Enterprise', icon: <Briefcase size={16} /> },
+                { label: 'Employee ID', value: user.employee_id_string || user.id.slice(0, 8), icon: <User size={16} /> },
                 { label: 'Employment Status', value: user.is_active ? 'Active' : 'Inactive', icon: <CheckCircle size={16} /> },
               ].map(item => (
                 <div key={item.label}>
@@ -72,14 +72,14 @@ export const EmployeeProfile: React.FC = () => {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: 'var(--text-primary)' }}>
                     <span style={{ color: 'var(--accent)' }}>{item.icon}</span>
-                    {item.value}
+                    <span style={{ textTransform: item.label === 'Role' ? 'capitalize' : 'none' }}>{item.value}</span>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Contact Information (Placeholder for actual profile editing later) */}
+          {/* Contact Information */}
           <div className="card">
             <div className="card-header">
               <div className="card-title">Contact Information</div>
@@ -87,9 +87,9 @@ export const EmployeeProfile: React.FC = () => {
             <div className="card-body" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
               {[
                 { label: 'Work Email', value: user.email, icon: <Mail size={16} /> },
-                { label: 'Contact Number', value: '+1 (555) 123-4567', icon: <Phone size={16} /> },
-                { label: 'Location', value: 'Headquarters - New York, NY', icon: <MapPin size={16} /> },
-                { label: 'Timezone', value: 'EST (UTC-5)', icon: <Globe size={16} /> },
+                { label: 'Contact Number', value: user.phone || 'Not provided', icon: <Phone size={16} /> },
+                { label: 'Location', value: user.location || 'Not provided', icon: <MapPin size={16} /> },
+                { label: 'Timezone', value: 'Indian Standard Time (IST)', icon: <Globe size={16} /> },
               ].map(item => (
                 <div key={item.label}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6, fontWeight: 700 }}>

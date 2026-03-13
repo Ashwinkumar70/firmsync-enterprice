@@ -18,18 +18,43 @@ export const HRDashboard: React.FC = () => {
   const [pendingLeaves, setPendingLeaves] = useState<LeaveWithEmployee[]>([]);
   const [allLeaves, setAllLeaves] = useState<LeaveRequest[]>([]);
   const [employees, setEmployees] = useState<UserProfile[]>([]);
+  const [counts, setCounts] = useState({
+    totalEmployees: 0,
+    activeEmployees: 0,
+    pendingHR: 0,
+    approvedLeaves: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      const [pl, al, emp] = await Promise.all([
+      const [
+        pl, 
+        al, 
+        emp,
+        totalEmp,
+        activeEmp,
+        penHR,
+        appLv
+      ] = await Promise.all([
         supabase.from('leave_requests').select('*, employee:users!employee_id(full_name, email)').eq('status', 'manager_approved').order('created_at', { ascending: false }),
         supabase.from('leave_requests').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('users').select('*').order('created_at', { ascending: false }),
+        supabase.from('users').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('users').select('id', { count: 'exact', head: true }),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'manager_approved'),
+        supabase.from('leave_requests').select('id', { count: 'exact', head: true }).eq('status', 'approved'),
       ]);
+      
       setPendingLeaves((pl.data ?? []) as LeaveWithEmployee[]);
       setAllLeaves((al.data ?? []) as LeaveRequest[]);
       setEmployees((emp.data ?? []) as UserProfile[]);
+      setCounts({
+        totalEmployees: totalEmp.count ?? 0,
+        activeEmployees: activeEmp.count ?? 0,
+        pendingHR: penHR.count ?? 0,
+        approvedLeaves: appLv.count ?? 0
+      });
       setLoading(false);
     };
     load();
@@ -56,8 +81,7 @@ export const HRDashboard: React.FC = () => {
     value: employees.filter(e => e.role === role).length,
   }));
 
-  const activeEmployees = employees.filter(e => e.is_active).length;
-  const approvedLeaves = allLeaves.filter(l => l.status === 'approved').length;
+  /* Aggregates are now handled via the counts object */
 
   return (
     <PageWrapper pageTitle="HR Dashboard">
@@ -70,8 +94,8 @@ export const HRDashboard: React.FC = () => {
       <div className="ai-insight" style={{ marginBottom: 24 }}>
         <div className="ai-insight-header"><Zap size={14} />HR Insight</div>
         <div className="ai-insight-text">
-          {pendingLeaves.length > 0
-            ? `${pendingLeaves.length} leave request${pendingLeaves.length > 1 ? 's' : ''} approved by managers and awaiting your final approval.`
+          {counts.pendingHR > 0
+            ? `${counts.pendingHR} leave request${counts.pendingHR > 1 ? 's' : ''} approved by managers and awaiting your final approval.`
             : 'All manager-approved leaves have been processed. No pending final approvals.'}
         </div>
       </div>
@@ -79,10 +103,10 @@ export const HRDashboard: React.FC = () => {
       {/* KPIs */}
       <div className="kpi-grid" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Total Employees', value: employees.length, icon: <Users size={20} />, color: 'blue' },
-          { label: 'Active Employees', value: activeEmployees, icon: <CheckCircle size={20} />, color: 'green' },
-          { label: 'Pending HR Approval', value: pendingLeaves.length, icon: <Calendar size={20} />, color: 'orange' },
-          { label: 'Approved Leaves', value: approvedLeaves, icon: <TrendingUp size={20} />, color: 'purple' },
+          { label: 'Total Employees', value: counts.totalEmployees, icon: <Users size={20} />, color: 'blue' },
+          { label: 'Active Employees', value: counts.activeEmployees, icon: <CheckCircle size={20} />, color: 'green' },
+          { label: 'Pending HR Approval', value: counts.pendingHR, icon: <Calendar size={20} />, color: 'orange' },
+          { label: 'Approved Leaves', value: counts.approvedLeaves, icon: <TrendingUp size={20} />, color: 'purple' },
         ].map(k => (
           <div key={k.label} className={`kpi-card ${k.color}`}>
             <div className={`kpi-icon ${k.color}`}>{k.icon}</div>

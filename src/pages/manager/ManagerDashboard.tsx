@@ -19,19 +19,61 @@ export const ManagerDashboard: React.FC = () => {
   const { user } = useAuth();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [teamLeaves, setTeamLeaves] = useState<LeaveRequest[]>([]);
+  const [counts, setCounts] = useState({
+    total: 0,
+    approved: 0,
+    pending: 0,
+    pendingLeaves: 0
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      if (!user) return;
-      const [wf, lv] = await Promise.all([
-        supabase.from('workflows').select('*, creator:users!created_by(full_name, email)').eq('department_id', user.department_id).order('created_at', { ascending: false }).limit(10),
-        supabase.from('leave_requests').select('*, employee:users!employee_id(full_name, department_id)').eq('status', 'pending').limit(20),
+      if (!user?.department_id) return;
+      
+      const [
+        wf, 
+        lv,
+        total,
+        approved,
+        pendingReview,
+        pendingLeaves
+      ] = await Promise.all([
+        supabase.from('workflows')
+          .select('*, creator:users!created_by(full_name, email)')
+          .eq('department_id', user.department_id)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase.from('leave_requests')
+          .select('*, employee:users!employee_id(full_name, department_id)')
+          .eq('status', 'pending')
+          .filter('employee.department_id', 'eq', user.department_id)
+          .limit(5),
+        supabase.from('workflows')
+          .select('id', { count: 'exact', head: true })
+          .eq('department_id', user.department_id),
+        supabase.from('workflows')
+          .select('id', { count: 'exact', head: true })
+          .eq('department_id', user.department_id)
+          .in('status', ['approved', 'completed']),
+        supabase.from('workflows')
+          .select('id', { count: 'exact', head: true })
+          .eq('department_id', user.department_id)
+          .in('status', ['created', 'assigned', 'under_review']),
+        supabase.from('leave_requests')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pending')
+          .filter('employee.department_id', 'eq', user.department_id)
       ]);
+
       setWorkflows((wf.data ?? []) as Workflow[]);
-      const allPending = (lv.data ?? []) as any[];
-      const filteredLeaves = allPending.filter(l => l.employee?.department_id === user.department_id);
-      setTeamLeaves(filteredLeaves.slice(0, 5) as LeaveRequest[]);
+      setTeamLeaves((lv.data ?? []) as any[]);
+      setCounts({
+        total: total.count ?? 0,
+        approved: approved.count ?? 0,
+        pending: pendingReview.count ?? 0,
+        pendingLeaves: pendingLeaves.count ?? 0
+      });
       setLoading(false);
     };
     load();
@@ -48,14 +90,11 @@ export const ManagerDashboard: React.FC = () => {
   });
 
   // AI insight
-  const pending = workflows.filter(w => ['created', 'assigned', 'under_review'].includes(w.status));
-  const aiInsight = pending.length > 3
-    ? `⚠️ ${pending.length} workflows are awaiting your review. Addressing older requests first can reduce bottlenecks.`
-    : pending.length === 0
+  const aiInsight = counts.pending > 3
+    ? `⚠️ ${counts.pending} workflows are awaiting your review. Addressing older requests first can reduce bottlenecks.`
+    : counts.pending === 0
     ? '✅ Great job! No pending workflows. Your team is running smoothly.'
-    : `📋 ${pending.length} workflow${pending.length > 1 ? 's' : ''} pending review. Consider prioritizing high-priority items.`;
-
-  const approvedCount = workflows.filter(w => w.status === 'approved' || w.status === 'completed').length;
+    : `📋 ${counts.pending} workflow${counts.pending > 1 ? 's' : ''} pending review. Consider prioritizing high-priority items.`;
 
   return (
     <PageWrapper pageTitle="Manager Dashboard">
@@ -73,10 +112,10 @@ export const ManagerDashboard: React.FC = () => {
       {/* KPIs */}
       <div className="kpi-grid" style={{ marginBottom: 24 }}>
         {[
-          { label: 'Total Workflows', value: workflows.length, icon: <ClipboardCheck size={20} />, color: 'blue' },
-          { label: 'Approved', value: approvedCount, icon: <TrendingUp size={20} />, color: 'green' },
-          { label: 'Pending Review', value: pending.length, icon: <Clock size={20} />, color: 'orange' },
-          { label: 'Pending Leaves', value: teamLeaves.length, icon: <Users size={20} />, color: 'purple' },
+          { label: 'Total Workflows', value: counts.total, icon: <ClipboardCheck size={20} />, color: 'blue' },
+          { label: 'Approved', value: counts.approved, icon: <TrendingUp size={20} />, color: 'green' },
+          { label: 'Pending Review', value: counts.pending, icon: <Clock size={20} />, color: 'orange' },
+          { label: 'Pending Leaves', value: counts.pendingLeaves, icon: <Users size={20} />, color: 'purple' },
         ].map(k => (
           <div key={k.label} className={`kpi-card ${k.color}`}>
             <div className={`kpi-icon ${k.color}`}>{k.icon}</div>

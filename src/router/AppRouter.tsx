@@ -35,15 +35,20 @@ const HRDashboard       = lazy(() => import('../pages/hr/HRDashboard').then(m =>
 const EmployeeRecords   = lazy(() => import('../pages/hr/EmployeeRecords').then(m => ({ default: m.EmployeeRecords })));
 const Payroll           = lazy(() => import('../pages/hr/Payroll').then(m => ({ default: m.Payroll })));
 const HRLeaveApprovals  = lazy(() => import('../pages/hr/HRLeaveApprovals').then(m => ({ default: m.HRLeaveApprovals })));
+const CareerDevelopment = lazy(() => import('../pages/hr/CareerDevelopment').then(m => ({ default: m.CareerDevelopment })));
+const HRReports         = lazy(() => import('../pages/hr/HRReports').then(m => ({ default: m.HRReports })));
 
 // Admin pages (Lazy)
-const AdminDashboard  = lazy(() => import('../pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
-const UserManagement  = lazy(() => import('../pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
-const Departments     = lazy(() => import('../pages/admin/Departments').then(m => ({ default: m.Departments })));
-const LeaveManagement = lazy(() => import('../pages/admin/LeaveManagement').then(m => ({ default: m.LeaveManagement })));
+const AdminDashboard   = lazy(() => import('../pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
+const UserManagement   = lazy(() => import('../pages/admin/UserManagement').then(m => ({ default: m.UserManagement })));
+const Departments      = lazy(() => import('../pages/admin/Departments').then(m => ({ default: m.Departments })));
+const LeaveManagement  = lazy(() => import('../pages/admin/LeaveManagement').then(m => ({ default: m.LeaveManagement })));
+const SystemMonitor    = lazy(() => import('../pages/admin/SystemMonitor').then(m => ({ default: m.SystemMonitor })));
+const WorkflowConfig   = lazy(() => import('../pages/admin/WorkflowConfig').then(m => ({ default: m.WorkflowConfig })));
+const AdminNotifications = lazy(() => import('../pages/admin/Notifications').then(m => ({ default: m.AdminNotifications })));
+const AdminSettings    = lazy(() => import('../pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
 
 // Placeholder for scaffolded-but-not-yet-implemented pages
-import { StubPage } from '../pages/StubPage';
 
 const LoadingFallback = () => (
   <div style={{ 
@@ -105,8 +110,8 @@ export const AppRouter: React.FC = () => (
             <Route path="/hr/leave-approvals"  element={<HRLeaveApprovals />} />
             <Route path="/hr/employee-records" element={<EmployeeRecords />} />
             <Route path="/hr/payroll"          element={<Payroll />} />
-            <Route path="/hr/career"           element={<StubPage title="Career Development" subtitle="Employee growth tracking and plans" />} />
-            <Route path="/hr/reports"          element={<StubPage title="HR Reports" subtitle="Analytics and workforce reports" />} />
+            <Route path="/hr/career"           element={<CareerDevelopment />} />
+            <Route path="/hr/reports"          element={<HRReports />} />
           </Route>
 
           {/* ── ADMIN PORTAL ────────────────────────────────────────── */}
@@ -116,10 +121,10 @@ export const AppRouter: React.FC = () => (
             <Route path="/admin/users"          element={<UserManagement />} />
             <Route path="/admin/departments"    element={<Departments />} />
             <Route path="/admin/leave"          element={<LeaveManagement />} />
-            <Route path="/admin/system-monitor" element={<StubPage title="System Monitor" subtitle="Real-time system health and usage metrics" />} />
-            <Route path="/admin/workflows"      element={<StubPage title="Workflow Configuration" subtitle="Set routing rules and approval chains" />} />
-            <Route path="/admin/notifications"  element={<StubPage title="Notifications" subtitle="Manage system notification settings" />} />
-            <Route path="/admin/settings"       element={<StubPage title="Settings" subtitle="Global application settings" />} />
+            <Route path="/admin/system-monitor" element={<SystemMonitor />} />
+            <Route path="/admin/workflows"      element={<WorkflowConfig />} />
+            <Route path="/admin/notifications"  element={<AdminNotifications />} />
+            <Route path="/admin/settings"       element={<AdminSettings />} />
           </Route>
 
           {/* Any unmatched path → root (role-redirect kicks in) */}

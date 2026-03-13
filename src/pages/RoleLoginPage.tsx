@@ -24,6 +24,10 @@ const loginSchema = z.object({
 });
 const signupSchema = loginSchema.extend({
   full_name: z.string().min(2, 'Full name is required'),
+  phone:      z.string().min(10, 'Enter a valid phone number'),
+  location:   z.string().min(2, 'Location is required'),
+  employee_id_string: z.string().min(2, 'Employee ID is required'),
+  department_id: z.string().uuid('Please select a department'),
   confirm:   z.string(),
 }).refine(d => d.password === d.confirm, {
   message: "Passwords don't match", path: ['confirm'],
@@ -154,18 +158,21 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   const navigate = useNavigate();
   const cfg = PORTAL_CONFIG[portalRole];
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
   const [signupDone, setSignupDone] = useState(false);
+  const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
   const roleLabel = title.replace(' Portal', '');
 
-  /* ── Preload Background Image ── */
+  /* ── Preload Background Image & Fetch Data ── */
   React.useEffect(() => {
-    const img = new Image();
-    img.src = cfg.bgImage;
-    img.onload = () => setImgLoaded(true);
+    const load = async () => {
+      const img = new Image();
+      img.src = cfg.bgImage;
+      img.onload = () => setImgLoaded(true);
+
+      const { data } = await supabase.from('departments').select('id, name');
+      if (data) setDepartments(data);
+    };
+    load();
   }, [cfg.bgImage]);
 
   /* ── Sign-in ─────────────────────────────────── */
@@ -227,8 +234,15 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
       if (!authData.user) throw new Error('Sign-up failed. Please try again.');
 
       await supabase.from('users').upsert({
-        id: authData.user.id, email: data.email,
-        full_name: data.full_name, role: 'employee', is_active: true,
+        id: authData.user.id,
+        email: data.email,
+        full_name: data.full_name,
+        role: 'employee',
+        phone: data.phone,
+        location: data.location,
+        employee_id_string: data.employee_id_string,
+        department_id: data.department_id,
+        is_active: true,
       });
       setSignupDone(true);
     } catch (err: unknown) {
@@ -536,29 +550,55 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
           {/* SIGN-UP FORM */}
           {tab === 'signup' && !signupDone && (
             <form onSubmit={hsS(onSignUp)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Full Name</label>
-                <Input {...regS('full_name')} icon={<User size={15} />} error={errS.full_name?.message} accent={cfg.accent} placeholder="Jane Smith" autoComplete="name" />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Full Name</label>
+                  <Input {...regS('full_name')} icon={<User size={15} />} error={errS.full_name?.message} accent={cfg.accent} placeholder="Jane Smith" autoComplete="name" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Email Address</label>
+                  <Input {...regS('email')} type="email" icon={<Mail size={15} />} error={errS.email?.message} accent={cfg.accent} placeholder="you@company.com" autoComplete="email" />
+                </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Email Address</label>
-                <Input {...regS('email')} type="email" icon={<Mail size={15} />} error={errS.email?.message} accent={cfg.accent} placeholder="you@company.com" autoComplete="email" />
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Phone Number</label>
+                  <Input {...regS('phone')} icon={<Phone size={15} />} error={errS.phone?.message} accent={cfg.accent} placeholder="+91 98765 43210" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Location</label>
+                  <Input {...regS('location')} icon={<MapPin size={15} />} error={errS.location?.message} accent={cfg.accent} placeholder="Mumbai, India" />
+                </div>
               </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Password</label>
-                <Input {...regS('password')} type="password" icon={<Lock size={15} />} error={errS.password?.message} accent={cfg.accent} placeholder="Minimum 6 characters" autoComplete="new-password" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Confirm Password</label>
-                <div style={{ position: 'relative' }}>
-                  <Input {...regS('confirm')} type={showConfirm ? 'text' : 'password'} icon={<Lock size={15} />} error={errS.confirm?.message} accent={cfg.accent} placeholder="Repeat password" autoComplete="new-password" style={{ paddingRight: 48 }} />
-                  <button
-                    type="button" onClick={() => setShowConfirm(!showConfirm)}
-                    style={{ position: 'absolute', right: 14, top: errS.confirm ? 'calc(50% - 10px)' : '50%', transform: 'translateY(-50%)', color: '#94A3B8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', padding: 0 }}
-                    tabIndex={-1}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Employee ID</label>
+                  <Input {...regS('employee_id_string')} icon={<Shield size={15} />} error={errS.employee_id_string?.message} accent={cfg.accent} placeholder="FS-2024-001" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Department</label>
+                  <select 
+                    {...regS('department_id')}
+                    className={`form-input ${errS.department_id ? 'error' : ''}`}
+                    style={{ background: '#F8FAFC', padding: '12px', height: '48.5px' }}
                   >
-                    {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                    <option value="">Select Department</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                  {errS.department_id && <div style={{ marginTop: 5, fontSize: 12, color: '#EF4444' }}>{errS.department_id.message}</div>}
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Password</label>
+                  <Input {...regS('password')} type="password" icon={<Lock size={15} />} error={errS.password?.message} accent={cfg.accent} placeholder="••••••••" autoComplete="new-password" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Confirm Password</label>
+                  <Input {...regS('confirm')} type="password" icon={<Lock size={15} />} error={errS.confirm?.message} accent={cfg.accent} placeholder="••••••••" autoComplete="new-password" />
                 </div>
               </div>
 
