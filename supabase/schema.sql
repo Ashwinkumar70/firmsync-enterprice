@@ -34,12 +34,19 @@ INSERT INTO public.roles (name, permissions) VALUES
   ('employee', '{"submit_requests": true, "view_own": true}'::jsonb)
 ON CONFLICT (name) DO NOTHING;
 
+-- Helper function to get current user's company_id
+-- We define this early so we can use it for DEFAULTS
+CREATE OR REPLACE FUNCTION public.get_my_company()
+RETURNS UUID AS $$
+  SELECT company_id FROM public.users WHERE id = auth.uid();
+$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+
 -- ============================================================
 -- DEPARTMENTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.departments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   manager_id UUID,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -76,7 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_users_dept ON public.users(department_id);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.workflows (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('leave', 'project', 'support', 'purchase', 'general')),
   title TEXT NOT NULL,
   description TEXT,
@@ -101,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_workflows_department ON public.workflows(departme
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.workflow_steps (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   workflow_id UUID NOT NULL REFERENCES public.workflows(id) ON DELETE CASCADE,
   step_order INTEGER NOT NULL,
   step_name TEXT NOT NULL,
@@ -121,7 +128,7 @@ CREATE INDEX IF NOT EXISTS idx_workflow_steps_workflow ON public.workflow_steps(
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.leave_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   employee_id UUID NOT NULL REFERENCES public.users(id),
   type TEXT NOT NULL CHECK (type IN ('annual', 'sick', 'maternity', 'paternity', 'unpaid', 'other')),
   start_date DATE NOT NULL,
@@ -147,7 +154,7 @@ CREATE INDEX IF NOT EXISTS idx_leave_status_date ON public.leave_requests(status
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.projects (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
   owner_id UUID NOT NULL REFERENCES public.users(id),
@@ -172,7 +179,7 @@ CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.project_updates (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES public.users(id),
   content TEXT NOT NULL,
@@ -190,7 +197,7 @@ CREATE INDEX IF NOT EXISTS idx_project_updates_project ON public.project_updates
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.support_tickets (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   reporter_id UUID NOT NULL REFERENCES public.users(id),
   assigned_to UUID REFERENCES public.users(id),
   title TEXT NOT NULL,
@@ -214,7 +221,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_category ON public.support_tickets(catego
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.employee_skills (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   skill_name TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'technical' CHECK (category IN ('technical', 'soft', 'domain', 'language', 'certification')),
@@ -233,7 +240,7 @@ CREATE INDEX IF NOT EXISTS idx_skills_user ON public.employee_skills(user_id);
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.achievements (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   badge_name TEXT NOT NULL,
   badge_description TEXT,
@@ -251,7 +258,7 @@ CREATE INDEX IF NOT EXISTS idx_achievements_user ON public.achievements(user_id)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.purchase_requests (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   requester_id UUID NOT NULL REFERENCES public.users(id),
   title TEXT NOT NULL,
   description TEXT,
@@ -276,7 +283,7 @@ CREATE INDEX IF NOT EXISTS idx_purchase_status ON public.purchase_requests(statu
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.payroll_records (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   employee_id UUID NOT NULL REFERENCES public.users(id),
   period_start DATE NOT NULL,
   period_end DATE NOT NULL,
@@ -297,7 +304,7 @@ CREATE INDEX IF NOT EXISTS idx_payroll_employee ON public.payroll_records(employ
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.notifications (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   message TEXT NOT NULL,
@@ -316,7 +323,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(user_i
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.career_goals (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
+  company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   description TEXT,

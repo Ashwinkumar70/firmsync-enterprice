@@ -24,6 +24,7 @@ const loginSchema = z.object({
   password: z.string().min(6, 'At least 6 characters'),
 });
 const signupSchema = loginSchema.extend({
+  joinCode:   z.string().min(8, 'Join code is 8 characters'),
   full_name: z.string().min(2, 'Full name is required'),
   phone:      z.string().min(10, 'Enter a valid phone number'),
   location:   z.string().min(2, 'Location is required'),
@@ -161,24 +162,54 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   const cfg = PORTAL_CONFIG[portalRole];
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [signupDone, setSignupDone] = useState(false);
-  const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
+  const [verifiedCompany, setVerifiedCompany] = useState<{id: string, name: string} | null>(null);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const roleLabel = title.replace(' Portal', '');
 
-  /* ── Preload Background Image & Fetch Data ── */
+  /* ── Preload Background Image ── */
   React.useEffect(() => {
-    const load = async () => {
-      const img = new Image();
-      img.src = cfg.bgImage;
-      img.onload = () => setImgLoaded(true);
-
-      const { data } = await supabase.from('departments').select('id, name');
-      if (data) setDepartments(data);
-    };
-    load();
+    const img = new Image();
+    img.src = cfg.bgImage;
+    img.onload = () => setImgLoaded(true);
   }, [cfg.bgImage]);
+
+  /* ── Join Code Verification ── */
+  const verifyJoinCode = async (code: string) => {
+    if (code.length < 8) return;
+    setIsVerifyingCode(true);
+    setAuthError(null);
+    try {
+      const { data: company, error } = await supabase
+        .from('companies')
+        .select('id, name')
+        .eq('join_code', code.toUpperCase())
+        .single();
+      
+      if (error || !company) {
+        setVerifiedCompany(null);
+        setDepartments([]);
+        throw new Error('Invalid join code. Please check with your administrator.');
+      }
+
+      setVerifiedCompany(company);
+      
+      // Fetch departments for THIS company
+      const { data: depts } = await supabase
+        .from('departments')
+        .select('id, name')
+        .eq('company_id', company.id);
+      
+      if (depts) setDepartments(depts);
+    } catch (err: unknown) {
+      setAuthError(err instanceof Error ? err.message : 'Failed to verify code');
+    } finally {
+      setIsVerifyingCode(false);
+    }
+  };
 
   /* ── Sign-in ─────────────────────────────────── */
   const {
@@ -228,11 +259,19 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   const onSignUp = async (data: SignupForm) => {
     setAuthError(null);
     try {
+      if (!verifiedCompany) {
+        throw new Error('Please enter and verify a valid company join code first.');
+      }
+
       const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email, password: data.password,
         options: { 
-          data: { full_name: data.full_name },
+          data: { 
+            full_name: data.full_name,
+            company_id: verifiedCompany.id,
+            role: portalRole
+          },
           emailRedirectTo: redirectTo
         },
       });
@@ -241,9 +280,10 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
 
       await supabase.from('users').upsert({
         id: authData.user.id,
+        company_id: verifiedCompany.id,
         email: data.email,
         full_name: data.full_name,
-        role: 'employee',
+        role: portalRole as any,
         phone: data.phone,
         location: data.location,
         employee_id_string: data.employee_id_string,
@@ -557,6 +597,39 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
           {/* SIGN-UP FORM */}
           {tab === 'signup' && !signupDone && (
             <form onSubmit={hsS(onSignUp)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Company Join Code</label>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <Input 
+                      {...regS('joinCode')} 
+                      icon={<Shield size={15} />} 
+                      error={errS.joinCode?.message} 
+                      accent={cfg.accent} 
+                      placeholder="ENTER8CODE" 
+                      onChange={(e) => {
+                        regS('joinCode').onChange(e);
+                        if (e.target.value.length === 8) verifyJoinCode(e.target.value);
+                      }}
+                    />
+                  </div>
+                  {verifiedCompany && (
+                    <div style={{ 
+                      padding: '0 16px', borderRadius: 12, background: '#F0FDF4', 
+                      border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', 
+                      gap: 8, color: '#166534', fontSize: 12, fontWeight: 700 
+                    }}>
+                      <CheckCircle size={14} /> {verifiedCompany.name}
+                    </div>
+                  )}
+                  {isVerifyingCode && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748B' }}>
+                      <span className="spinner small" /> Verifying...
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Full Name</label>

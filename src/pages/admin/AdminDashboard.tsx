@@ -91,10 +91,10 @@ export const AdminDashboard: React.FC = () => {
           </div>
           <div>
             <h1 className="page-title" style={{ fontSize: 34, marginBottom: 4, letterSpacing: '-0.02em' }}>
-              System Command
+              {user?.company?.name || 'System Command'}
             </h1>
             <p className="page-subtitle" style={{ fontSize: 16 }}>
-              Enterprise Infrastructure <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Active</span> • Node: FirmSync-US-East
+              Enterprise Infrastructure <span style={{ color: 'var(--primary)', fontWeight: 700 }}>Active</span> • Workspace: {user?.company?.name || 'Default'}
             </p>
           </div>
         </div>
@@ -112,8 +112,23 @@ export const AdminDashboard: React.FC = () => {
           ) : (
             <span style={{ color: 'var(--success)' }}> ✅ Nominal Performance across all nodes.</span>
           )}
-          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-            Total Tickets: {counts.totalTickets} | Active Purchases: {counts.totalPurchases} | Database Latency: 12ms
+          <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 16 }}>
+            <span>Total Tickets: {counts.totalTickets} | Active Purchases: {counts.totalPurchases} | Database Latency: 12ms</span>
+            {user?.company?.join_code && (
+              <div style={{ 
+                background: 'rgba(99, 102, 241, 0.1)', 
+                padding: '4px 12px', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                color: 'var(--primary)',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8
+              }}>
+                <Shield size={14} /> Join Code: <span style={{ fontFamily: 'monospace', fontSize: 14 }}>{user.company.join_code}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

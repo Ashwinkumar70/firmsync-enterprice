@@ -365,6 +365,21 @@ export const PortalSelector: React.FC = () => {
         🔒 Protected by enterprise-grade role-based access control · FirmSync Enterprise
       </p>
 
+      <div style={{ marginTop: 24, padding: '16px 24px', background: 'rgba(99, 102, 241, 0.05)', borderRadius: 16, border: '1px solid rgba(99, 102, 241, 0.15)', display: 'flex', alignItems: 'center', gap: 12, position: 'relative', zIndex: 1 }}>
+        <span style={{ fontSize: 13, color: '#475569' }}>Want to use FirmSync for your company?</span>
+        <button 
+          onClick={() => navigate('/register-company')}
+          style={{ 
+            background: 'linear-gradient(135deg, #6366F1, #4338CA)', 
+            color: 'white', border: 'none', padding: '8px 16px', 
+            borderRadius: 10, fontSize: 13, fontWeight: 700, 
+            cursor: 'pointer', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)' 
+          }}
+        >
+          Create a Workspace
+        </button>
+      </div>
+
       {/* Animation Styles */}
       <style>{`
         @keyframes float {

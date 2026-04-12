@@ -9,6 +9,7 @@ const AdminLogin    = lazy(() => import('../pages/login/AdminLogin').then(m => (
 const ManagerLogin  = lazy(() => import('../pages/login/ManagerLogin').then(m => ({ default: m.ManagerLogin })));
 const HRLogin       = lazy(() => import('../pages/login/HRLogin').then(m => ({ default: m.HRLogin })));
 const EmployeeLogin = lazy(() => import('../pages/login/EmployeeLogin').then(m => ({ default: m.EmployeeLogin })));
+const RegisterCompany = lazy(() => import('../pages/RegisterCompany').then(m => ({ default: m.RegisterCompany })));
 
 // Employee pages (Lazy)
 const EmployeeDashboard = lazy(() => import('../pages/employee/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
@@ -77,6 +78,7 @@ export const AppRouter: React.FC = () => (
           <Route path="/login/manager"  element={<ManagerLogin />} />
           <Route path="/login/hr"       element={<HRLogin />} />
           <Route path="/login/employee" element={<EmployeeLogin />} />
+          <Route path="/register-company" element={<RegisterCompany />} />
 
           {/* Root → dispatch authenticated user to their portal dashboard */}
           <Route path="/" element={<RoleRedirect />} />
