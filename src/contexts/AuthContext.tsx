@@ -42,32 +42,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const initAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
+    let mounted = true;
 
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
-        setUser(profile);
+    const syncUser = async (session: Session | null) => {
+      if (!session?.user) {
+        if (mounted) {
+          setUser(null);
+          setLoading(false);
+        }
+        return;
       }
 
-      setLoading(false);
+      // If we already have this user profile, don't refetch
+      if (user?.id === session.user.id) {
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      const profile = await fetchUserProfile(session.user.id);
+      if (mounted) {
+        setUser(profile);
+        setLoading(false);
+      }
     };
 
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const profile = await fetchUserProfile(session.user.id);
-        setUser(profile);
-      } else {
-        setUser(null);
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) {
+        setSession(session);
+        syncUser(session);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setSession(session);
+        syncUser(session);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {

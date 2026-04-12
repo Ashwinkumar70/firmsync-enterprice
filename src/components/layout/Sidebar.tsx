@@ -100,12 +100,12 @@ interface SidebarProps {
   onMobileClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) => {
+export const Sidebar: React.FC<SidebarProps> = React.memo(({ mobileOpen, onMobileClose }) => {
   const [collapsed, setCollapsed] = useState(false);
   const { user, role, signOut } = useAuth();
   const navigate = useNavigate();
 
-  const navSections = role ? NAV_CONFIG[role] : [];
+  const navSections = React.useMemo(() => (role ? NAV_CONFIG[role] : []), [role]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -154,11 +154,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
         {/* Footer */}
         <div className="sidebar-footer">
           {!collapsed && user && (
-            <div style={{ padding: '8px 12px', marginBottom: 8, borderRadius: 'var(--radius)', background: 'rgba(255,255,255,0.06)' }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'white', marginBottom: 2 }}>
+            <div style={{ 
+              padding: '12px 16px', 
+              marginBottom: 12, 
+              borderRadius: 'var(--radius)', 
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.08)'
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 2 }}>
                 {user.full_name || user.email}
               </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', textTransform: 'capitalize' }}>
+              <div style={{ fontSize: 11, color: 'rgba(255, 255, 255, 0.5)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
                 {user.role}
               </div>
             </div>
@@ -186,4 +192,4 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onMobileClose }) =
       </aside>
     </>
   );
-};
+});

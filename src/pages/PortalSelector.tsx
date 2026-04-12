@@ -81,17 +81,15 @@ export const PortalSelector: React.FC = () => {
       onMouseMove={handleMouseMove}
       style={{
         minHeight: '100vh',
-        background: '#F8FAFC',
-        backgroundImage: 'radial-gradient(ellipse at 20% 10%, rgba(59,130,246,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 90%, rgba(139,92,246,0.06) 0%, transparent 60%)',
+        background: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '48px 24px',
-        fontFamily: "'Inter', -apple-system, sans-serif",
+        padding: '64px 24px',
+        fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
         position: 'relative',
         overflow: 'hidden',
-        // Default values for CSS variables
         '--mouse-x': '50vw',
         '--mouse-y': '50vh',
       } as React.CSSProperties}>
@@ -208,13 +206,15 @@ export const PortalSelector: React.FC = () => {
         <div style={{ textAlign: 'center', marginBottom: 52 }}>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14, marginBottom: 20,
-          background: 'rgba(255, 255, 255, 0.4)',
-          backdropFilter: 'blur(8px)',
-          padding: '8px 20px',
-          borderRadius: 20,
-          border: '1px solid rgba(226, 232, 240, 0.5)',
+          background: 'rgba(255, 255, 255, 0.5)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          padding: '10px 24px',
+          borderRadius: 24,
+          border: '1px solid rgba(255, 255, 255, 0.4)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.05)',
           width: 'fit-content',
-          margin: '0 auto 20px'
+          margin: '0 auto 24px'
         }}>
           <div style={{
             width: 44, height: 44,
@@ -262,33 +262,33 @@ export const PortalSelector: React.FC = () => {
               key={p.role}
               onClick={() => navigate(p.path)}
               style={{
-                background: 'white',
-                border: '1px solid #E2E8F0',
-                borderRadius: 20,
-                padding: '28px 24px 24px',
+                background: 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
+                border: '1px solid rgba(255, 255, 255, 0.5)',
+                borderRadius: 24,
+                padding: '32px 28px 28px',
                 cursor: 'pointer',
                 textAlign: 'left',
-                color: '#0F172A',
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03)',
-                transition: 'all 0.25s cubic-bezier(0.34,1.56,0.64,1)',
+                color: '#1e293b',
+                boxShadow: '0 12px 40px rgba(0, 0, 0, 0.04)',
+                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                 position: 'relative',
                 overflow: 'hidden',
               }}
               onMouseEnter={e => {
                 const el = e.currentTarget;
-                el.style.transform = 'translateY(-6px) scale(1.01)';
-                el.style.boxShadow = `0 24px 60px ${p.glow.replace('0.35', '0.2')}`;
-                el.style.borderColor = p.gradient.includes('#EF4444') ? '#EF4444' :
-                  p.gradient.includes('#3B82F6') ? '#3B82F6' :
-                  p.gradient.includes('#8B5CF6') ? '#8B5CF6' : '#10B981';
-                el.style.background = 'white';
+                el.style.transform = 'translateY(-8px)';
+                el.style.boxShadow = `0 32px 64px ${p.glow.replace('0.35', '0.15')}`;
+                el.style.borderColor = p.accent;
+                el.style.background = 'rgba(255, 255, 255, 0.6)';
               }}
               onMouseLeave={e => {
                 const el = e.currentTarget;
-                el.style.transform = 'translateY(0) scale(1)';
-                el.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03)';
-                el.style.borderColor = '#E2E8F0';
-                el.style.background = 'white';
+                el.style.transform = 'translateY(0)';
+                el.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.04)';
+                el.style.borderColor = 'rgba(255, 255, 255, 0.5)';
+                el.style.background = 'rgba(255, 255, 255, 0.4)';
               }}
             >
               {/* Decorative glow blob */}
@@ -347,13 +347,13 @@ export const PortalSelector: React.FC = () => {
               {/* CTA */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '11px 16px',
-                background: '#F8FAFC',
-                borderRadius: 12,
-                border: '1px solid #E2E8F0',
+                padding: '12px 18px',
+                background: 'rgba(255, 255, 255, 0.3)',
+                borderRadius: 14,
+                border: '1px solid rgba(255, 255, 255, 0.4)',
               }}>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>Sign In to {p.role} Portal</span>
-                <ArrowRight size={16} color="#64748B" />
+                <span style={{ fontWeight: 700, fontSize: 13, color: p.accent }}>Sign In to {p.role} Portal</span>
+                <ArrowRight size={16} color={p.accent} />
               </div>
             </button>
           );

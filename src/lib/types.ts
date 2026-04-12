@@ -8,8 +8,16 @@ export type WorkflowStatus = 'created' | 'assigned' | 'under_review' | 'approved
 export type WorkflowType = 'leave' | 'project' | 'support' | 'purchase' | 'general';
 export type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface Company {
+  id: string;
+  name: string;
+  join_code: string;
+  created_at: string;
+}
+
 export interface UserProfile {
   id: string;
+  company_id: string;
   email: string;
   full_name: string;
   role: UserRole;
@@ -24,6 +32,7 @@ export interface UserProfile {
   updated_at: string;
   // joined
   department?: Department;
+  company?: Company;
 }
 
 export interface Role {
@@ -35,13 +44,17 @@ export interface Role {
 
 export interface Department {
   id: string;
+  company_id: string;
   name: string;
   manager_id: string | null;
   created_at: string;
+  // joined
+  company?: Company;
 }
 
 export interface Workflow {
   id: string;
+  company_id: string;
   type: WorkflowType;
   title: string;
   description: string | null;
@@ -57,10 +70,12 @@ export interface Workflow {
   creator?: UserProfile;
   assignee?: UserProfile;
   workflow_steps?: WorkflowStep[];
+  company?: Company;
 }
 
 export interface WorkflowStep {
   id: string;
+  company_id: string;
   workflow_id: string;
   step_order: number;
   step_name: string;
@@ -74,6 +89,7 @@ export interface WorkflowStep {
 
 export interface LeaveRequest {
   id: string;
+  company_id: string;
   employee_id: string;
   type: 'annual' | 'sick' | 'maternity' | 'paternity' | 'unpaid' | 'other';
   start_date: string;
@@ -88,10 +104,12 @@ export interface LeaveRequest {
   updated_at: string;
   // joined
   employee?: UserProfile;
+  company?: Company;
 }
 
 export interface Project {
   id: string;
+  company_id: string;
   name: string;
   description: string | null;
   owner_id: string;
@@ -107,10 +125,12 @@ export interface Project {
   owner?: UserProfile;
   manager?: UserProfile;
   project_updates?: ProjectUpdate[];
+  company?: Company;
 }
 
 export interface ProjectUpdate {
   id: string;
+  company_id: string;
   project_id: string;
   author_id: string;
   content: string;
@@ -120,10 +140,12 @@ export interface ProjectUpdate {
   created_at: string;
   // joined
   author?: UserProfile;
+  company?: Company;
 }
 
 export interface SupportTicket {
   id: string;
+  company_id: string;
   reporter_id: string;
   assigned_to: string | null;
   title: string;
@@ -137,10 +159,12 @@ export interface SupportTicket {
   updated_at: string;
   // joined
   reporter?: UserProfile;
+  company?: Company;
 }
 
 export interface EmployeeSkill {
   id: string;
+  company_id: string;
   user_id: string;
   skill_name: string;
   category: 'technical' | 'soft' | 'domain' | 'language' | 'certification';
@@ -152,6 +176,7 @@ export interface EmployeeSkill {
 
 export interface Achievement {
   id: string;
+  company_id: string;
   user_id: string;
   badge_name: string;
   badge_description: string | null;
@@ -163,6 +188,7 @@ export interface Achievement {
 
 export interface PurchaseRequest {
   id: string;
+  company_id: string;
   requester_id: string;
   title: string;
   description: string | null;
@@ -178,10 +204,12 @@ export interface PurchaseRequest {
   updated_at: string;
   // joined
   requester?: UserProfile;
+  company?: Company;
 }
 
 export interface PayrollRecord {
   id: string;
+  company_id: string;
   employee_id: string;
   period_start: string;
   period_end: string;
@@ -196,6 +224,7 @@ export interface PayrollRecord {
 
 export interface Notification {
   id: string;
+  company_id: string;
   user_id: string;
   title: string;
   message: string;
@@ -207,6 +236,7 @@ export interface Notification {
 
 export interface CareerGoal {
   id: string;
+  company_id: string;
   user_id: string;
   title: string;
   description: string | null;
@@ -223,6 +253,7 @@ export interface CareerGoal {
 export interface Database {
   public: {
     Tables: {
+      companies: { Row: Company; Insert: Partial<Company>; Update: Partial<Company> };
       users: { Row: UserProfile; Insert: Partial<UserProfile>; Update: Partial<UserProfile> };
       roles: { Row: Role; Insert: Partial<Role>; Update: Partial<Role> };
       departments: { Row: Department; Insert: Partial<Department>; Update: Partial<Department> };

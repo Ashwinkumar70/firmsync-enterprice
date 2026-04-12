@@ -12,7 +12,9 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-recharts': ['recharts'],
-          'vendor-utils': ['date-fns', 'lucide-react', 'zod', '@hookform/resolvers']
+          'vendor-icons': ['lucide-react'],
+          'vendor-forms': ['zod', '@hookform/resolvers', 'react-hook-form'],
+          'vendor-utils': ['date-fns']
         }
       }
     },

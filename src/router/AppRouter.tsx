@@ -3,12 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from '../contexts/AuthContext';
 import { ProtectedRoute, RoleRedirect } from './ProtectedRoute';
 
-// Portal selector & login pages (Keep eager for fast login experience)
-import { PortalSelector }  from '../pages/PortalSelector';
-import { AdminLogin }      from '../pages/login/AdminLogin';
-import { ManagerLogin }    from '../pages/login/ManagerLogin';
-import { HRLogin }         from '../pages/login/HRLogin';
-import { EmployeeLogin }   from '../pages/login/EmployeeLogin';
+// Portal selector & login pages (Lazy loaded for smaller initial bundle)
+const PortalSelector = lazy(() => import('../pages/PortalSelector').then(m => ({ default: m.PortalSelector })));
+const AdminLogin    = lazy(() => import('../pages/login/AdminLogin').then(m => ({ default: m.AdminLogin })));
+const ManagerLogin  = lazy(() => import('../pages/login/ManagerLogin').then(m => ({ default: m.ManagerLogin })));
+const HRLogin       = lazy(() => import('../pages/login/HRLogin').then(m => ({ default: m.HRLogin })));
+const EmployeeLogin = lazy(() => import('../pages/login/EmployeeLogin').then(m => ({ default: m.EmployeeLogin })));
 
 // Employee pages (Lazy)
 const EmployeeDashboard = lazy(() => import('../pages/employee/EmployeeDashboard').then(m => ({ default: m.EmployeeDashboard })));
@@ -37,6 +37,7 @@ const Payroll           = lazy(() => import('../pages/hr/Payroll').then(m => ({ 
 const HRLeaveApprovals  = lazy(() => import('../pages/hr/HRLeaveApprovals').then(m => ({ default: m.HRLeaveApprovals })));
 const CareerDevelopment = lazy(() => import('../pages/hr/CareerDevelopment').then(m => ({ default: m.CareerDevelopment })));
 const HRReports         = lazy(() => import('../pages/hr/HRReports').then(m => ({ default: m.HRReports })));
+const SupportTicketManagement = lazy(() => import('../pages/hr/SupportTicketManagement').then(m => ({ default: m.SupportTicketManagement })));
 
 // Admin pages (Lazy)
 const AdminDashboard   = lazy(() => import('../pages/admin/AdminDashboard').then(m => ({ default: m.AdminDashboard })));
@@ -47,6 +48,9 @@ const SystemMonitor    = lazy(() => import('../pages/admin/SystemMonitor').then(
 const WorkflowConfig   = lazy(() => import('../pages/admin/WorkflowConfig').then(m => ({ default: m.WorkflowConfig })));
 const AdminNotifications = lazy(() => import('../pages/admin/Notifications').then(m => ({ default: m.AdminNotifications })));
 const AdminSettings    = lazy(() => import('../pages/admin/AdminSettings').then(m => ({ default: m.AdminSettings })));
+
+// Manager additional
+const PurchaseRequestManagement = lazy(() => import('../pages/manager/PurchaseRequestManagement').then(m => ({ default: m.PurchaseRequestManagement })));
 
 // Placeholder for scaffolded-but-not-yet-implemented pages
 
@@ -101,6 +105,7 @@ export const AppRouter: React.FC = () => (
             <Route path="/manager/projects"       element={<ProjectFeedback />} />
             <Route path="/manager/team"           element={<TeamMembers />} />
             <Route path="/manager/tickets"        element={<ManagerTickets />} />
+            <Route path="/manager/purchases"      element={<PurchaseRequestManagement />} />
           </Route>
 
           {/* ── HR PORTAL ───────────────────────────────────────────── */}
@@ -112,6 +117,7 @@ export const AppRouter: React.FC = () => (
             <Route path="/hr/payroll"          element={<Payroll />} />
             <Route path="/hr/career"           element={<CareerDevelopment />} />
             <Route path="/hr/reports"          element={<HRReports />} />
+            <Route path="/hr/tickets"          element={<SupportTicketManagement />} />
           </Route>
 
           {/* ── ADMIN PORTAL ────────────────────────────────────────── */}

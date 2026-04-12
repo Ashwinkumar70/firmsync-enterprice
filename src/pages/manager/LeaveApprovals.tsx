@@ -48,6 +48,7 @@ export const LeaveApprovals: React.FC = () => {
   ) => {
     setActioningId(id);
     const comment = commentMap[id] ?? '';
+    const targetRequest = requests.find(r => r.id === id);
 
     const { error: upErr } = await supabase
       .from('leave_requests')
@@ -58,6 +59,28 @@ export const LeaveApprovals: React.FC = () => {
       setError('Action failed: ' + upErr.message);
       setActioningId(null);
       return;
+    }
+
+    // SYNC WORKFLOW
+    if (targetRequest?.workflow_id) {
+      // Update workflow status
+      await supabase.from('workflows').update({
+        status: newStatus === 'manager_approved' ? 'under_review' : 'rejected',
+        updated_at: new Date().toISOString()
+      }).eq('id', targetRequest.workflow_id);
+
+      // Add audit step
+      await supabase.from('workflow_steps').insert({
+        workflow_id: targetRequest.workflow_id,
+        company_id: user?.company_id,
+        step_order: 1,
+        step_name: 'Manager Review',
+        approver_role: 'manager',
+        approver_id: user?.id,
+        status: newStatus === 'manager_approved' ? 'approved' : 'rejected',
+        comments: comment || null,
+        timestamp: new Date().toISOString()
+      });
     }
 
     // Notify the employee

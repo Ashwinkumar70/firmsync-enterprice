@@ -7,7 +7,8 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Eye, EyeOff, ArrowLeft, Shield, CheckCircle,
-  Lock, Mail, User, Zap, BarChart3, Users, Workflow
+  Lock, Mail, User, Zap, BarChart3, Users, Workflow,
+  Phone, MapPin
 } from 'lucide-react';
 import type { UserRole } from '../lib/types';
 
@@ -126,23 +127,24 @@ const Input: React.FC<{
       {...props}
       style={{
         width: '100%', boxSizing: 'border-box',
-        padding: '13px 14px 13px 44px',
-        background: '#F8FAFC',
-        border: `1.5px solid ${error ? '#EF4444' : '#E2E8F0'}`,
-        borderRadius: 12, color: '#0F172A', fontSize: 14,
+        padding: '14px 14px 14px 44px',
+        background: 'rgba(255, 255, 255, 0.4)',
+        backdropFilter: 'blur(4px)',
+        border: `1.5px solid ${error ? '#EF4444' : 'rgba(255, 255, 255, 0.5)'}`,
+        borderRadius: 14, color: '#0F172A', fontSize: 14,
         outline: 'none', fontFamily: 'inherit',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
+        transition: 'all 0.2s',
         ...props.style,
       }}
       onFocus={e => {
         e.currentTarget.style.borderColor = accent;
-        e.currentTarget.style.boxShadow = `0 0 0 3px ${accent}20`;
-        e.currentTarget.style.background = 'white';
+        e.currentTarget.style.boxShadow = `0 0 0 4px ${accent}20`;
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.7)';
       }}
       onBlur={e => {
-        e.currentTarget.style.borderColor = error ? '#EF4444' : '#E2E8F0';
+        e.currentTarget.style.borderColor = error ? '#EF4444' : 'rgba(255, 255, 255, 0.5)';
         e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.background = '#F8FAFC';
+        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.4)';
       }}
     />
     {error && (
@@ -160,6 +162,9 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   const [tab, setTab] = useState<'signin' | 'signup'>('signin');
   const [signupDone, setSignupDone] = useState(false);
   const [departments, setDepartments] = useState<{id: string, name: string}[]>([]);
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [showPass, setShowPass] = useState(false);
   const roleLabel = title.replace(' Portal', '');
 
   /* ── Preload Background Image & Fetch Data ── */
@@ -205,7 +210,8 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
         return;
       }
 
-      await refreshUser();
+      // We don't need to await refreshUser() here because AuthContext handles it via onAuthStateChange
+      // Navigate immediately - ProtectedRoute/AuthContext will handle the background profile sync
       navigate(ROLE_HOME[portalRole], { replace: true });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid email or password';
@@ -254,9 +260,8 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   return (
     <div style={{
       minHeight: '100vh', display: 'flex',
-      background: '#F8FAFC',
-      backgroundImage: cfg.bgGradient,
-      fontFamily: "'Inter', -apple-system, sans-serif",
+      background: 'transparent',
+      fontFamily: "'Outfit', 'Inter', -apple-system, sans-serif",
     }}>
 
       {/* ── LEFT PANEL ── */}
@@ -401,9 +406,11 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
           {showSignup && (
             <div style={{
               display: 'flex', gap: 4, marginBottom: 32,
-              background: '#F1F5F9',
-              borderRadius: 14, padding: 4,
-              border: '1px solid #E2E8F0',
+              background: 'rgba(255, 255, 255, 0.2)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              borderRadius: 16, padding: 6,
+              border: '1px solid rgba(255, 255, 255, 0.3)',
             }}>
               {(['signin', 'signup'] as const).map(t => (
                 <button

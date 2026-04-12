@@ -51,6 +51,7 @@ export const HRLeaveApprovals: React.FC = () => {
   ) => {
     setActioningId(id);
     const comment = commentMap[id] ?? '';
+    const targetRequest = requests.find(r => r.id === id);
 
     const { error: upErr } = await supabase
       .from('leave_requests')
@@ -61,6 +62,28 @@ export const HRLeaveApprovals: React.FC = () => {
       setError('Action failed: ' + upErr.message);
       setActioningId(null);
       return;
+    }
+
+    // SYNC WORKFLOW
+    if (targetRequest?.workflow_id) {
+      // Update workflow status
+      await supabase.from('workflows').update({
+        status: newStatus === 'rejected' ? 'rejected' : 'approved',
+        updated_at: new Date().toISOString()
+      }).eq('id', targetRequest.workflow_id);
+
+      // Add audit step
+      await supabase.from('workflow_steps').insert({
+        workflow_id: targetRequest.workflow_id,
+        company_id: targetRequest.company_id,
+        step_order: 2,
+        step_name: 'HR Review',
+        approver_role: 'hr',
+        approver_id: null, // HR is generic here
+        status: newStatus === 'rejected' ? 'rejected' : 'approved',
+        comments: comment || null,
+        timestamp: new Date().toISOString()
+      });
     }
 
     const label = newStatus === 'rejected' ? 'rejected' : 'approved';
