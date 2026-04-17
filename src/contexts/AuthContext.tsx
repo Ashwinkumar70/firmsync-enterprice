@@ -21,18 +21,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (userId: string) => {
-    const { data, error } = await supabase
+    // 1. Try full profile fetch with joins
+    const { data: fullData, error: fullError } = await supabase
       .from('users')
       .select('*, department:departments(*), company:companies(*)')
       .eq('id', userId)
       .single();
 
-    if (error) {
-      console.error('[AuthContext] Error fetching user profile:', error);
+    if (!fullError) {
+      console.log('[AuthContext] Fetched full user profile:', fullData);
+      return fullData as UserProfile;
+    }
+
+    // 2. Fallback to basic profile fetch if joins fail (e.g., schema inconsistency)
+    console.warn('[AuthContext] Full profile fetch failed, falling back to basic fetch:', fullError.message);
+    const { data: basicData, error: basicError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (basicError) {
+      console.error('[AuthContext] Basic profile fetch also failed:', basicError);
       return null;
     }
-    console.log('[AuthContext] Fetched user profile:', data);
-    return data as UserProfile;
+
+    console.log('[AuthContext] Fetched basic user profile:', basicData);
+    return basicData as UserProfile;
   };
 
   const refreshUser = async () => {
