@@ -1,0 +1,1 @@
+import{j as o}from"./index-Dn8fKChx.js";import"./vendor-react-D2X5qBQ4.js";import{R as r}from"./RoleLoginPage-7MUOWsBm.js";import"./vendor-supabase-CpRTRdvQ.js";import"./vendor-forms-obxyCKQf.js";import"./zod-CFk8yibh.js";import"./vendor-icons-0YlT2EjF.js";const s=()=>o.jsx(r,{portalRole:"manager",title:"Manager Portal",showSignup:!1});export{s as ManagerLogin};
