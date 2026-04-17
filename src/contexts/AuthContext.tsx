@@ -28,9 +28,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .single();
 
     if (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('[AuthContext] Error fetching user profile:', error);
       return null;
     }
+    console.log('[AuthContext] Fetched user profile:', data);
     return data as UserProfile;
   };
 
@@ -61,6 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const profile = await fetchUserProfile(session.user.id);
       if (mounted) {
+        if (!profile) {
+          console.warn('[AuthContext] Profile fetch returned null for user:', session.user.id);
+        }
         setUser(profile);
         setLoading(false);
       }

@@ -79,12 +79,26 @@ CREATE POLICY "users_view_own" ON public.users
 DROP POLICY IF EXISTS "users_manager_view_dept" ON public.users;
 CREATE POLICY "users_manager_view_dept" ON public.users
   FOR SELECT USING (
-    company_id = get_my_company() AND get_my_role() = 'manager' AND department_id = get_my_department()
+    -- Non-recursive role/dept check
+    EXISTS (
+      SELECT 1 FROM public.users me
+      WHERE me.id = auth.uid() 
+      AND me.role = 'manager' 
+      AND me.department_id = public.users.department_id
+      AND me.company_id = public.users.company_id
+    )
   );
 
 DROP POLICY IF EXISTS "users_hr_view_all" ON public.users;
 CREATE POLICY "users_hr_view_all" ON public.users
-  FOR SELECT USING (company_id = get_my_company() AND get_my_role() IN ('hr', 'admin'));
+  FOR SELECT USING (
+    EXISTS (
+      SELECT 1 FROM public.users me
+      WHERE me.id = auth.uid() 
+      AND me.role IN ('hr', 'admin')
+      AND me.company_id = public.users.company_id
+    )
+  );
 
 DROP POLICY IF EXISTS "users_update_own" ON public.users;
 CREATE POLICY "users_update_own" ON public.users
@@ -92,7 +106,14 @@ CREATE POLICY "users_update_own" ON public.users
 
 DROP POLICY IF EXISTS "users_admin_all" ON public.users;
 CREATE POLICY "users_admin_all" ON public.users
-  FOR ALL USING (company_id = get_my_company() AND get_my_role() = 'admin');
+  FOR ALL USING (
+    EXISTS (
+      SELECT 1 FROM public.users me
+      WHERE me.id = auth.uid() 
+      AND me.role = 'admin'
+      AND me.company_id = public.users.company_id
+    )
+  );
 
 -- ============================================================
 -- WORKFLOWS TABLE POLICIES
