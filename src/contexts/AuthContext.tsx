@@ -45,8 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    const syncUser = async (session: Session | null) => {
-      if (!session?.user) {
+    const syncUser = async (currentSession: Session | null) => {
+      if (!currentSession?.user) {
         if (mounted) {
           setUser(null);
           setLoading(false);
@@ -54,16 +54,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // If we already have this user profile, don't refetch
-      if (user?.id === session.user.id) {
-        if (mounted) setLoading(false);
-        return;
-      }
+      // Start loading if we don't have this user's profile yet
+      if (mounted) setLoading(true);
 
-      const profile = await fetchUserProfile(session.user.id);
+      const profile = await fetchUserProfile(currentSession.user.id);
+      
       if (mounted) {
         if (!profile) {
-          console.warn('[AuthContext] Profile fetch returned null for user:', session.user.id);
+          console.warn('[AuthContext] Profile fetch returned null for user:', currentSession.user.id);
         }
         setUser(profile);
         setLoading(false);
