@@ -80,12 +80,12 @@ export const EmployeeDashboard: React.FC = () => {
   }, [user]);
 
   const kpis = React.useMemo(() => [
-    { label: 'Active Tasks', value: counts.pending, icon: <Zap size={20} />, color: 'blue' },
-    { label: 'Approved', value: counts.approved, icon: <CheckCircle size={20} />, color: 'green' },
-    { label: 'Pending', value: counts.pending, icon: <Clock size={20} />, color: 'orange' },
-    { label: 'Rejected', value: counts.rejected, icon: <XCircle size={20} />, color: 'red' },
-    { label: 'Leave Balance', value: counts.openLeave, icon: <Calendar size={20} />, color: 'purple', to: '/employee/leave' },
-    { label: 'Open Tickets', value: counts.openTickets, icon: <AlertCircle size={20} />, color: 'orange', to: '/employee/tickets' },
+    { label: '⚡ Active Tasks', value: counts.pending, icon: <Zap size={20} />, color: 'blue' },
+    { label: '✅ Approved', value: counts.approved, icon: <CheckCircle size={20} />, color: 'green' },
+    { label: '⏳ Pending', value: counts.pending, icon: <Clock size={20} />, color: 'orange' },
+    { label: '❌ Rejected', value: counts.rejected, icon: <XCircle size={20} />, color: 'red' },
+    { label: '🌴 Leave Balance', value: counts.openLeave, icon: <Calendar size={20} />, color: 'purple', to: '/employee/leave' },
+    { label: '🎫 Open Tickets', value: counts.openTickets, icon: <AlertCircle size={20} />, color: 'orange', to: '/employee/tickets' },
   ], [counts]);
 
   return (

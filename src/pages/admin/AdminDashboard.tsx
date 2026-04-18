@@ -8,7 +8,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, AreaChart, Area
 } from 'recharts';
-import { Users, Workflow, CheckCircle, TrendingUp, Zap, Settings, Ticket, ShoppingCart, Activity } from 'lucide-react';
+import { Users, Workflow, CheckCircle, TrendingUp, Zap, Settings, Ticket, ShoppingCart, Activity, Shield } from 'lucide-react';
 
 export const AdminDashboard: React.FC = () => {
   const { user } = useAuth();

@@ -2,6 +2,11 @@
   --primary: #4f46e5;
   --primary-glow: rgba(79, 70, 229, 0.4);
   --accent: #8b5cf6;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --orange: #f59e0b;
+  --red: #ef4444;
+  --purple: #8b5cf6;
   
   --bg: #f8fafc;
   --bg-card: rgba(255, 255, 255, 0.7);
@@ -1283,3 +1288,20 @@ img {
 .chart-wrap-sm {
   height: 200px;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
