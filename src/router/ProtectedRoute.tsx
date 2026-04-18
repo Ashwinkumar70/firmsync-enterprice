@@ -37,7 +37,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
   const { session, user, loading } = useAuth();
   const location = useLocation();
 
-  if (loading) return <FullPageSpinner />;
+  // Only show full page spinner if we don't have a user yet
+  if (loading && !user) return <FullPageSpinner />;
 
   // Not authenticated
   if (!session) {
@@ -66,11 +67,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
 export const RoleRedirect: React.FC = () => {
   const { session, user, loading } = useAuth();
 
-  if (loading) return <FullPageSpinner />;
+  // Only block if we have no user and are loading
+  if (loading && !user) return <FullPageSpinner />;
 
   if (!session) return <Navigate to="/login" replace />;
 
-  // Profile not yet available (very brief window) — wait on next render
+  // Profile not yet available — wait on next render
   if (!user || !user.role) return <Navigate to="/login" replace />;
 
   return <Navigate to={ROLE_HOME[user.role]} replace />;

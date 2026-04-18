@@ -236,7 +236,7 @@ export const AdminDashboard: React.FC = () => {
           <span className="badge badge-blue" style={{ padding: '6px 14px' }}>Active Nodes: {counts.activeUsers}</span>
         </div>
         <div className="card-body" style={{ padding: '12px' }}>
-          {loading ? (
+          {loading && users.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner" /></div>
           ) : (
             <div className="table-wrapper" style={{ border: 'none' }}>

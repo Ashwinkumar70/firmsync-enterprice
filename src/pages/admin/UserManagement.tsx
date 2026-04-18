@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { supabase } from '../../lib/supabase';
 import type { UserProfile, Department } from '../../lib/types';
-import { Edit2, ToggleLeft, ToggleRight, Search } from 'lucide-react';
+import { Edit2, ToggleLeft, ToggleRight, Search, Trash2 } from 'lucide-react';
 
 type UserRole = 'admin' | 'manager' | 'hr' | 'employee';
 
@@ -29,11 +29,21 @@ export const UserManagement: React.FC = () => {
 
   const updateUser = async () => {
     if (!editUser) return;
-    await supabase.from('users').update({
+    
+    // Convert empty string to null for database
+    const finalDeptId = form.department_id && form.department_id.trim() !== '' ? form.department_id : null;
+    
+    const { error } = await supabase.from('users').update({
       full_name: form.full_name,
       role: form.role,
-      department_id: form.department_id || null,
+      department_id: finalDeptId,
     }).eq('id', editUser.id);
+    
+    if (error) {
+      alert(`Error updating user: ${error.message}`);
+      return;
+    }
+    
     setEditUser(null);
     setMessage('User updated successfully!');
     setTimeout(() => setMessage(''), 3000);
@@ -43,6 +53,19 @@ export const UserManagement: React.FC = () => {
   const toggleActive = async (u: UserProfile) => {
     await supabase.from('users').update({ is_active: !u.is_active }).eq('id', u.id);
     fetchAll();
+  };
+
+  const deleteUser = async (u: UserProfile) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${u.full_name || u.email}? This action cannot be undone.`)) return;
+    
+    const { error } = await supabase.from('users').delete().eq('id', u.id);
+    if (error) {
+      alert(`Error deleting user: ${error.message}`);
+    } else {
+      setMessage('User deleted successfully!');
+      setTimeout(() => setMessage(''), 3000);
+      fetchAll();
+    }
   };
 
   const filtered = users.filter(u =>
@@ -109,7 +132,7 @@ export const UserManagement: React.FC = () => {
             <input className="form-input" placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
           </div>
         </div>
-        {loading ? (
+        {loading && users.length === 0 ? (
           <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner dark" style={{ margin: '0 auto' }} /></div>
         ) : (
           <div className="table-wrapper" style={{ border: 'none' }}>
@@ -135,6 +158,9 @@ export const UserManagement: React.FC = () => {
                           </button>
                           <button className="btn btn-ghost btn-sm" title={u.is_active ? 'Deactivate' : 'Activate'} onClick={() => toggleActive(u)}>
                             {u.is_active ? <ToggleRight size={16} color="var(--success)" /> : <ToggleLeft size={16} color="var(--text-muted)" />}
+                          </button>
+                          <button className="btn btn-ghost btn-sm" title="Delete Account" onClick={() => deleteUser(u)}>
+                            <Trash2 size={14} color="var(--danger)" />
                           </button>
                         </div>
                       </td>

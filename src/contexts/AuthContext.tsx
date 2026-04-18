@@ -24,7 +24,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 1. Try full profile fetch with joins
     const { data: fullData, error: fullError } = await supabase
       .from('users')
-      .select('*, department:departments(*), company:companies(*)')
+      .select(`
+        *,
+        department:departments(*),
+        company:companies(*)
+      `)
       .eq('id', userId)
       .single();
 
@@ -69,8 +73,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      // Start loading if we don't have this user's profile yet
-      if (mounted) setLoading(true);
+      // ONLY set global loading if we don't have a profile yet (Soft Loading)
+      if (mounted && !user) {
+        setLoading(true);
+      }
 
       const profile = await fetchUserProfile(currentSession.user.id);
       

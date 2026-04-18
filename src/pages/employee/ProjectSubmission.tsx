@@ -157,7 +157,7 @@ export const ProjectSubmission: React.FC = () => {
         {/* Project list */}
         <div className="card">
           <div className="card-header"><div className="card-title">My Projects</div></div>
-          {loading ? (
+          {loading && projects.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner dark" style={{ margin: '0 auto' }} /></div>
           ) : projects.length === 0 ? (
             <div className="empty-state">
