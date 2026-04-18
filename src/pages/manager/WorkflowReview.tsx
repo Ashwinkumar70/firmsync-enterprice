@@ -66,6 +66,7 @@ export const WorkflowReview: React.FC = () => {
 
     // Notify creator
     await supabase.from('notifications').insert({
+      company_id: user.company_id,
       user_id: selectedWf.created_by,
       title: `Request ${action === 'approved' ? 'Approved' : 'Rejected'}`,
       message: `Your request "${selectedWf.title}" has been ${action} by your manager.${comment ? ` Comment: ${comment}` : ''}`,

@@ -58,6 +58,12 @@ export const Topbar: React.FC<TopbarProps> = ({ pageTitle, onMobileMenu }) => {
     setNotifications(n => n.map(x => ({ ...x, is_read: true })));
   };
 
+  const markAsRead = async (notifId: string) => {
+    if (!user) return;
+    await supabase.from('notifications').update({ is_read: true }).eq('id', notifId);
+    setNotifications(n => n.map(x => x.id === notifId ? { ...x, is_read: true } : x));
+  };
+
   const initials = user?.full_name
     ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : user?.email?.slice(0, 2).toUpperCase() ?? 'FS';
@@ -102,7 +108,11 @@ export const Topbar: React.FC<TopbarProps> = ({ pageTitle, onMobileMenu }) => {
                 </div>
               ) : (
                 notifications.slice(0, 8).map(n => (
-                  <div key={n.id} className={`notif-item ${!n.is_read ? 'unread' : ''}`}>
+                  <div 
+                    key={n.id} 
+                    className={`notif-item ${!n.is_read ? 'unread' : ''}`}
+                    onClick={() => !n.is_read && markAsRead(n.id)}
+                  >
                     <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: TYPE_COLOR[n.type] ?? '#64748B', marginTop: 4, flexShrink: 0 }} />
                       <div>

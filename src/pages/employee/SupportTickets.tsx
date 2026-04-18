@@ -55,6 +55,7 @@ export const SupportTickets: React.FC = () => {
   const onSubmit = async (data: FormData) => {
     if (!user) return;
     await supabase.from('support_tickets').insert({
+      company_id: user.company_id,
       reporter_id: user.id,
       title: data.title,
       description: data.description,
@@ -63,6 +64,7 @@ export const SupportTickets: React.FC = () => {
       status: 'open',
     });
     await supabase.from('notifications').insert({
+      company_id: user.company_id,
       user_id: user.id,
       title: 'Support Ticket Created',
       message: `Your ticket "${data.title}" has been submitted.`,

@@ -73,6 +73,7 @@ export const LeaveRequests: React.FC = () => {
 
       // Create workflow
       const { data: wf } = await supabase.from('workflows').insert({
+        company_id: user.company_id,
         type: 'leave',
         title: `Leave Request – ${data.type}`,
         status: 'created',
@@ -83,6 +84,7 @@ export const LeaveRequests: React.FC = () => {
 
       // Create leave request
       const { error: leaveError } = await supabase.from('leave_requests').insert({
+        company_id: user.company_id,
         employee_id: user.id,
         type: data.type,
         start_date: data.start_date,
@@ -96,6 +98,7 @@ export const LeaveRequests: React.FC = () => {
 
       // Add notification
       await supabase.from('notifications').insert({
+        company_id: user.company_id,
         user_id: user.id,
         title: 'Leave Request Submitted',
         message: `Your ${data.type} leave request has been submitted and is under review.`,

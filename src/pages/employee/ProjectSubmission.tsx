@@ -66,6 +66,7 @@ export const ProjectSubmission: React.FC = () => {
   const onCreateProject = async (data: ProjectForm) => {
     if (!user) return;
     await supabase.from('projects').insert({
+      company_id: user.company_id,
       name: data.name,
       description: data.description ?? null,
       owner_id: user.id,
@@ -96,6 +97,7 @@ export const ProjectSubmission: React.FC = () => {
   const onSubmitUpdate = async (data: UpdateForm) => {
     if (!user || !selectedProject) return;
     await supabase.from('project_updates').insert({
+      company_id: user.company_id,
       project_id: selectedProject.id,
       author_id: user.id,
       content: data.content,
