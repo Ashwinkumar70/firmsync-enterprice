@@ -25,11 +25,22 @@ const FullPageSpinner = () => (
 );
 
 /**
+ * Helper to determine the best login page based on the requested URL.
+ */
+const getLoginRedirect = (path: string): string => {
+  if (path.startsWith('/manager')) return '/login/manager';
+  if (path.startsWith('/admin'))   return '/login/admin';
+  if (path.startsWith('/hr'))      return '/login/hr';
+  if (path.startsWith('/employee')) return '/login/employee';
+  return '/login'; // Fallback to selector
+};
+
+/**
  * ProtectedRoute – wraps role-specific route groups.
  *
  * Behaviour:
- *  - No session            → redirect to /login (preserving intended destination)
- *  - Session but no role   → redirect to /login (profile fetch failed — safe fallback)
+ *  - No session            → redirect to specific login (preserving intended destination)
+ *  - Session but no role   → redirect to login (profile fetch failed — safe fallback)
  *  - Wrong role            → redirect to the user's own dashboard (cross-portal guard)
  *  - Correct role          → render children via <Outlet />
  */
@@ -42,7 +53,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
 
   // Not authenticated
   if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    const loginPath = getLoginRedirect(location.pathname);
+    return <Navigate to={loginPath} state={{ from: location }} replace />;
   }
 
   // Session exists but profile/role could not be loaded (e.g., missing users row)
@@ -60,6 +72,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allowedRoles }) 
   return <Outlet />;
 };
 
+
 /**
  * RoleRedirect – placed at "/" to send authenticated users to their portal.
  * Unauthenticated users are sent to /login.
@@ -70,10 +83,11 @@ export const RoleRedirect: React.FC = () => {
   // Only block if we have no user and are loading
   if (loading && !user) return <FullPageSpinner />;
 
-  if (!session) return <Navigate to="/login" replace />;
+  if (!session) return <Navigate to={getLoginRedirect('/')} replace />;
 
   // Profile not yet available — wait on next render
   if (!user || !user.role) return <Navigate to="/login" replace />;
 
   return <Navigate to={ROLE_HOME[user.role]} replace />;
 };
+
