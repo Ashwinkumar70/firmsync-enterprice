@@ -1,0 +1,1 @@
+import{j as o}from"./index-CV8AzTKL.js";import"./vendor-react-D2X5qBQ4.js";import{R as t}from"./RoleLoginPage-D8vXrirf.js";import"./vendor-supabase-CpRTRdvQ.js";import"./vendor-forms-obxyCKQf.js";import"./zod-CFk8yibh.js";import"./vendor-icons-DGvwloeg.js";const l=()=>o.jsx(t,{portalRole:"hr",title:"HR Portal",showSignup:!1});export{l as HRLogin};

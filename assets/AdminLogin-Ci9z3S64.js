@@ -1,0 +1,1 @@
+import{j as o}from"./index-CV8AzTKL.js";import"./vendor-react-D2X5qBQ4.js";import{R as i}from"./RoleLoginPage-D8vXrirf.js";import"./vendor-supabase-CpRTRdvQ.js";import"./vendor-forms-obxyCKQf.js";import"./zod-CFk8yibh.js";import"./vendor-icons-DGvwloeg.js";const e=()=>o.jsx(i,{portalRole:"admin",title:"Admin Portal",showSignup:!1});export{e as AdminLogin};
