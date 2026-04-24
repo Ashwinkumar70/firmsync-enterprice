@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import type { LeaveRequest, UserProfile, Department } from '../../lib/types';
 import { Calendar, CheckCircle, XCircle, Clock, Info, User, Search } from 'lucide-react';
 
@@ -27,6 +28,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export const LeaveManagement: React.FC = () => {
+  const { user } = useAuth();
   const [requests, setRequests]   = useState<LeaveWithEmployee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -37,14 +39,16 @@ export const LeaveManagement: React.FC = () => {
   const [success, setSuccess]     = useState<string | null>(null);
 
   const fetchData = async () => {
+    if (!user) return;
     setLoading(true);
     setError(null);
     const [lRes, dRes] = await Promise.all([
       supabase
         .from('leave_requests')
         .select('*, employee:users!employee_id(id, full_name, email, department_id)')
+        .eq('company_id', user.company_id)
         .order('created_at', { ascending: false }),
-      supabase.from('departments').select('*').order('name'),
+      supabase.from('departments').select('*').eq('company_id', user.company_id).order('name'),
     ]);
 
     if (lRes.error) setError('Failed to load leave requests: ' + lRes.error.message);
@@ -54,7 +58,7 @@ export const LeaveManagement: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [user]);
 
   const getDeptName = (deptId: string | null | undefined) =>
     departments.find(d => d.id === deptId)?.name ?? '—';
@@ -69,7 +73,8 @@ export const LeaveManagement: React.FC = () => {
     const { error: upErr } = await supabase
       .from('leave_requests')
       .update({ status: newStatus })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('company_id', user.company_id);
 
     if (upErr) {
       setError('Action failed: ' + upErr.message);
@@ -79,6 +84,7 @@ export const LeaveManagement: React.FC = () => {
 
     // Notify employee
     await supabase.from('notifications').insert({
+      company_id: user.company_id,
       user_id: employeeId,
       title: `Leave ${newStatus === 'approved' ? 'Approved ✅' : 'Rejected ❌'}`,
       message: `Your ${leaveType} leave request has been ${newStatus} by administration.`,

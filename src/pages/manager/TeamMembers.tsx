@@ -14,7 +14,11 @@ export const TeamMembers: React.FC = () => {
 
   useEffect(() => {
     const fetchTeam = async () => {
-      if (!user?.department_id) return;
+      if (!user) return;
+      if (!user.department_id) {
+        setLoading(false);
+        return;
+      }
       const { data, error } = await supabase
         .from('users')
         .select('*')
@@ -65,6 +69,13 @@ export const TeamMembers: React.FC = () => {
           </select>
         </div>
       </div>
+
+      {!user?.department_id && (
+        <div className="alert alert-warning" style={{ marginBottom: 24 }}>
+          ⚠ <strong>No department assigned.</strong> You are not currently assigned to a department. 
+          Please ask your admin to assign you to a department to see your team members.
+        </div>
+      )}
 
       {loading ? (
         <div style={{ padding: 48, textAlign: 'center' }}><div className="spinner dark" style={{ margin: '0 auto' }} /></div>

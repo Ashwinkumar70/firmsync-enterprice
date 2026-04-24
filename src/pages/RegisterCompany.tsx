@@ -7,15 +7,17 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import {
   Building2, Mail, Lock, User, ArrowLeft, Shield, CheckCircle,
-  Zap, BarChart3, Users, Globe, Layout
+  Zap, BarChart3, Users, Globe, Layout, Hash
 } from 'lucide-react';
 
 const registerSchema = z.object({
-  company_name: z.string().min(2, 'Company name is required'),
-  full_name:    z.string().min(2, 'Full name is required'),
+  company_name: z.string().min(2, 'Company name is too short'),
+  company_code: z.string().min(3, 'Code must be at least 3 characters').max(10, 'Code too long').regex(/^[A-Z0-9]+$/i, 'Only letters and numbers allowed'),
+  full_name: z.string().min(2, 'Full name is too short'),
   email:         z.string().email('Enter a valid email address'),
   password:      z.string().min(6, 'At least 6 characters'),
   confirm:       z.string(),
+  departments:   z.string().optional(),
 }).refine(d => d.password === d.confirm, {
   message: "Passwords don't match", path: ['confirm'],
 });
@@ -84,7 +86,12 @@ export const RegisterCompany: React.FC = () => {
   const onSubmit = async (data: RegisterForm) => {
     setAuthError(null);
     try {
-      // Use the helper trigger logic we added to schema.sql
+      console.log('Attempting registration for:', data.email);
+      
+      // Ensure redirect URL is absolute and valid
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const redirectUrl = new URL(baseUrl, window.location.origin).href;
+      
       const { data: authData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -92,18 +99,41 @@ export const RegisterCompany: React.FC = () => {
           data: {
             full_name: data.full_name,
             company_name: data.company_name,
+            company_code: data.company_code.toUpperCase(),
+            departments: data.departments ? data.departments.split(',').map(d => d.trim()).filter(d => d.length > 0) : null,
             is_company_registration: 'true',
           },
-          emailRedirectTo: `${window.location.origin}${import.meta.env.BASE_URL}`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
-      if (error) throw error;
-      if (!authData.user) throw new Error('Registration failed');
+      if (error) {
+        console.error('Supabase Auth Error:', error);
+        throw error;
+      }
+      
+      if (!authData.user) {
+        throw new Error('Registration failed: No user returned from server');
+      }
 
+      console.log('Registration successful:', authData.user.id);
       setIsDone(true);
-    } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Registration failed');
+    } catch (err: any) {
+      console.error('Registration Exception Full Details:', err);
+      
+      const msg = err?.message || 'Registration failed';
+      const detail = err?.details || '';
+      const hint = err?.hint || '';
+      
+      console.error('Registration Error Message:', msg);
+      if (detail) console.error('Registration Error Detail:', detail);
+      if (hint) console.error('Registration Error Hint:', hint);
+
+      if (msg.includes('Unexpected failure') || msg.includes('Database error')) {
+        setAuthError(`Server Error: The registration trigger failed. Details: ${msg} ${detail}`);
+      } else {
+        setAuthError(msg);
+      }
     }
   };
 
@@ -247,9 +277,15 @@ export const RegisterCompany: React.FC = () => {
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Name</label>
-                  <Input {...register('company_name')} icon={<Building2 size={16} />} placeholder="Acme Corp" error={errors.company_name?.message} accent={accent} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Name</label>
+                    <Input {...register('company_name')} icon={<Building2 size={16} />} placeholder="Acme Corp" error={errors.company_name?.message} accent={accent} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Code</label>
+                    <Input {...register('company_code')} icon={<Zap size={16} />} placeholder="ACME123" error={errors.company_code?.message} accent={accent} />
+                  </div>
                 </div>
 
                 <div>
@@ -271,6 +307,30 @@ export const RegisterCompany: React.FC = () => {
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Confirm</label>
                     <Input {...register('confirm')} type="password" icon={<Lock size={16} />} placeholder="••••••••" error={errors.confirm?.message} accent={accent} />
                   </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
+                    Initial Departments (Optional)
+                  </label>
+                  <textarea 
+                    {...register('departments')}
+                    placeholder="Engineering, HR, Sales, Marketing..."
+                    style={{
+                      width: '100%', boxSizing: 'border-box',
+                      padding: '12px',
+                      background: 'rgba(255, 255, 255, 0.4)',
+                      backdropFilter: 'blur(4px)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.5)',
+                      borderRadius: 14, color: '#0F172A', fontSize: 14,
+                      outline: 'none', fontFamily: 'inherit',
+                      minHeight: 80, resize: 'vertical',
+                      transition: 'all 0.2s',
+                    }}
+                  />
+                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
+                    Separate departments with commas. We'll create these for your workspace automatically.
+                  </p>
                 </div>
 
                 <button

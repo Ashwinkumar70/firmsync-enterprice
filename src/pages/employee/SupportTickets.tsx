@@ -54,7 +54,7 @@ export const SupportTickets: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     if (!user) return;
-    await supabase.from('support_tickets').insert({
+    const { error: ticketErr } = await supabase.from('support_tickets').insert({
       company_id: user.company_id,
       reporter_id: user.id,
       title: data.title,
@@ -63,6 +63,12 @@ export const SupportTickets: React.FC = () => {
       priority: data.priority,
       status: 'open',
     });
+
+    if (ticketErr) {
+      alert('Failed to submit ticket: ' + ticketErr.message);
+      return;
+    }
+
     await supabase.from('notifications').insert({
       company_id: user.company_id,
       user_id: user.id,

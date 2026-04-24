@@ -31,7 +31,11 @@ export const ManagerDashboard: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!user?.department_id) return;
+      if (!user) return;
+      if (!user.department_id) {
+        setLoading(false);
+        return;
+      }
       
       const [
         wf, 
@@ -44,31 +48,38 @@ export const ManagerDashboard: React.FC = () => {
       ] = await Promise.all([
         supabase.from('workflows')
           .select('*, creator:users!created_by(full_name, email)')
+          .eq('company_id', user.company_id)
           .eq('department_id', user.department_id)
           .order('created_at', { ascending: false })
           .limit(10),
         supabase.from('leave_requests')
           .select('*, employee:users!employee_id(full_name, department_id)')
+          .eq('company_id', user.company_id)
           .eq('status', 'pending')
           .filter('employee.department_id', 'eq', user.department_id)
           .limit(5),
         supabase.from('workflows')
           .select('id', { count: 'exact', head: true })
+          .eq('company_id', user.company_id)
           .eq('department_id', user.department_id),
         supabase.from('workflows')
           .select('id', { count: 'exact', head: true })
+          .eq('company_id', user.company_id)
           .eq('department_id', user.department_id)
           .in('status', ['approved', 'completed']),
         supabase.from('workflows')
           .select('id', { count: 'exact', head: true })
+          .eq('company_id', user.company_id)
           .eq('department_id', user.department_id)
           .in('status', ['created', 'assigned', 'under_review', 'pending']),
         supabase.from('leave_requests')
           .select('id', { count: 'exact', head: true })
+          .eq('company_id', user.company_id)
           .eq('status', 'pending')
           .filter('employee.department_id', 'eq', user.department_id),
         supabase.from('purchase_requests')
           .select('id', { count: 'exact', head: true })
+          .eq('company_id', user.company_id)
           .eq('status', 'pending'),
       ]);
 
@@ -137,6 +148,13 @@ export const ManagerDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {!user?.department_id && (
+        <div className="alert alert-warning" style={{ marginBottom: 24 }}>
+          ⚠ <strong>No department assigned.</strong> You are not currently assigned to a department. 
+          Please ask your admin to assign you to a department to see your team's metrics and workflows.
+        </div>
+      )}
 
       {/* Premium AI Insight */}
       <div className="ai-insight hover-lift" style={{ marginBottom: 32, animation: 'fadeInUp 0.6s ease-out 0.2s forwards', opacity: 0 }}>

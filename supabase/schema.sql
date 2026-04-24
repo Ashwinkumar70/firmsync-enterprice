@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- COMPANIES TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.companies (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   join_code TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -21,7 +21,7 @@ CREATE INDEX IF NOT EXISTS idx_companies_join_code ON public.companies(join_code
 -- ROLES TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL UNIQUE,
   permissions JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -45,7 +45,7 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE;
 -- DEPARTMENTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.departments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   manager_id UUID,
@@ -82,7 +82,7 @@ CREATE INDEX IF NOT EXISTS idx_users_dept ON public.users(department_id);
 -- WORKFLOWS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.workflows (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   type TEXT NOT NULL CHECK (type IN ('leave', 'project', 'support', 'purchase', 'general')),
   title TEXT NOT NULL,
@@ -107,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_workflows_department ON public.workflows(departme
 -- WORKFLOW STEPS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.workflow_steps (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   workflow_id UUID NOT NULL REFERENCES public.workflows(id) ON DELETE CASCADE,
   step_order INTEGER NOT NULL,
@@ -127,7 +127,7 @@ CREATE INDEX IF NOT EXISTS idx_workflow_steps_workflow ON public.workflow_steps(
 -- LEAVE REQUESTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.leave_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   employee_id UUID NOT NULL REFERENCES public.users(id),
   type TEXT NOT NULL CHECK (type IN ('annual', 'sick', 'maternity', 'paternity', 'unpaid', 'other')),
@@ -153,7 +153,7 @@ CREATE INDEX IF NOT EXISTS idx_leave_status_date ON public.leave_requests(status
 -- PROJECTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.projects (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
   description TEXT,
@@ -178,7 +178,7 @@ CREATE INDEX IF NOT EXISTS idx_projects_status ON public.projects(status);
 -- PROJECT UPDATES TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.project_updates (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   author_id UUID NOT NULL REFERENCES public.users(id),
@@ -196,7 +196,7 @@ CREATE INDEX IF NOT EXISTS idx_project_updates_project ON public.project_updates
 -- SUPPORT TICKETS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.support_tickets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   reporter_id UUID NOT NULL REFERENCES public.users(id),
   assigned_to UUID REFERENCES public.users(id),
@@ -220,7 +220,7 @@ CREATE INDEX IF NOT EXISTS idx_tickets_category ON public.support_tickets(catego
 -- EMPLOYEE SKILLS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.employee_skills (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   skill_name TEXT NOT NULL,
@@ -239,7 +239,7 @@ CREATE INDEX IF NOT EXISTS idx_skills_user ON public.employee_skills(user_id);
 -- ACHIEVEMENTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.achievements (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   badge_name TEXT NOT NULL,
@@ -257,7 +257,7 @@ CREATE INDEX IF NOT EXISTS idx_achievements_user ON public.achievements(user_id)
 -- PURCHASE REQUESTS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.purchase_requests (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   requester_id UUID NOT NULL REFERENCES public.users(id),
   title TEXT NOT NULL,
@@ -282,7 +282,7 @@ CREATE INDEX IF NOT EXISTS idx_purchase_status ON public.purchase_requests(statu
 -- PAYROLL RECORDS TABLE (stub)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.payroll_records (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   employee_id UUID NOT NULL REFERENCES public.users(id),
   period_start DATE NOT NULL,
@@ -303,7 +303,7 @@ CREATE INDEX IF NOT EXISTS idx_payroll_employee ON public.payroll_records(employ
 -- NOTIFICATIONS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.notifications (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -322,7 +322,7 @@ CREATE INDEX IF NOT EXISTS idx_notifications_read ON public.notifications(user_i
 -- CAREER GOALS TABLE
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.career_goals (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL DEFAULT public.get_my_company() REFERENCES public.companies(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
@@ -375,51 +375,102 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_company_id UUID;
   v_join_code TEXT;
+  v_company_name TEXT;
+  v_full_name TEXT;
+  v_attempts INTEGER := 0;
 BEGIN
+  -- Extract metadata with safety
+  v_company_name := COALESCE(NEW.raw_user_meta_data->>'company_name', 'New Company');
+  v_full_name := COALESCE(NEW.raw_user_meta_data->>'full_name', '');
+
   -- Check if this is a company registration flow
-  IF NEW.raw_user_meta_data->>'is_company_registration' = 'true' THEN
-    -- Generate an 8 character join code
-    v_join_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 8));
+  IF (NEW.raw_user_meta_data->>'is_company_registration') = 'true' THEN
+    -- Use admin's chosen code, or generate one if not provided
+    v_join_code := UPPER(TRIM(COALESCE(NEW.raw_user_meta_data->>'company_code', '')));
+    IF v_join_code = '' THEN
+      -- Generate an 8 character join code with collision check
+      LOOP
+        v_join_code := UPPER(SUBSTRING(MD5(RANDOM()::TEXT) FROM 1 FOR 8));
+        IF NOT EXISTS (SELECT 1 FROM public.companies WHERE join_code = v_join_code) THEN
+          EXIT;
+        END IF;
+        v_attempts := v_attempts + 1;
+        IF v_attempts > 15 THEN
+          RAISE EXCEPTION 'Could not generate unique join code after several attempts';
+        END IF;
+      END LOOP;
+    ELSE
+      -- Verify chosen code is unique
+      IF EXISTS (SELECT 1 FROM public.companies WHERE join_code = v_join_code) THEN
+        RAISE EXCEPTION 'Company code "%" is already in use. Please choose a different one.', v_join_code;
+      END IF;
+    END IF;
     
     -- Create the new company
+    -- We use a simple INSERT and capture the ID. If it exists by name, we might want to allow it 
+    -- but usually company names aren't unique, only join_codes are.
     INSERT INTO public.companies (name, join_code)
-    VALUES (NEW.raw_user_meta_data->>'company_name', v_join_code)
+    VALUES (v_company_name, v_join_code)
     RETURNING id INTO v_company_id;
     
-    -- Create default departments
-    INSERT INTO public.departments (company_id, name) VALUES 
-      (v_company_id, 'Engineering'),
-      (v_company_id, 'Human Resources'),
-      (v_company_id, 'Finance'),
-      (v_company_id, 'Operations'),
-      (v_company_id, 'Sales'),
-      (v_company_id, 'Marketing');
+    -- Create departments (custom if provided, else defaults)
+    IF (NEW.raw_user_meta_data->'departments') IS NOT NULL AND jsonb_array_length(NEW.raw_user_meta_data->'departments') > 0 THEN
+      INSERT INTO public.departments (company_id, name)
+      SELECT v_company_id, trim(name)
+      FROM jsonb_array_elements_text(NEW.raw_user_meta_data->'departments') AS name
+      WHERE trim(name) != ''
+      ON CONFLICT (company_id, name) DO NOTHING;
+    ELSE
+      -- Create default departments
+      INSERT INTO public.departments (company_id, name) VALUES 
+        (v_company_id, 'Engineering'),
+        (v_company_id, 'Human Resources'),
+        (v_company_id, 'Finance'),
+        (v_company_id, 'Operations'),
+        (v_company_id, 'Sales'),
+        (v_company_id, 'Marketing')
+      ON CONFLICT (company_id, name) DO NOTHING;
+    END IF;
       
-    -- Insert the admin user
+    -- Insert the admin user profile
     INSERT INTO public.users (id, company_id, email, full_name, role)
-    VALUES (
-      NEW.id,
-      v_company_id,
-      NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-      'admin'
-    );
+    VALUES (NEW.id, v_company_id, NEW.email, v_full_name, 'admin')
+    ON CONFLICT (id) DO UPDATE SET
+      company_id = EXCLUDED.company_id,
+      email = EXCLUDED.email,
+      full_name = EXCLUDED.full_name,
+      role = EXCLUDED.role;
     
   ELSE
     -- Normal employee signup, user must pass company_id via metadata
+    IF (NEW.raw_user_meta_data->>'company_id') IS NULL THEN
+      -- If no company_id is provided, we can't create the profile.
+      -- We return NEW to allow the auth user creation, but they won't have a profile.
+      RETURN NEW;
+    END IF;
+
     INSERT INTO public.users (id, company_id, email, full_name, role)
     VALUES (
       NEW.id,
       (NEW.raw_user_meta_data->>'company_id')::uuid,
       NEW.email,
-      COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
+      v_full_name,
       COALESCE(NEW.raw_user_meta_data->>'role', 'employee')
-    );
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      company_id = EXCLUDED.company_id,
+      email = EXCLUDED.email,
+      full_name = EXCLUDED.full_name,
+      role = EXCLUDED.role;
   END IF;
   
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  -- Re-raise the error so Supabase Auth can catch it, but try to keep it clean
+  RAISE EXCEPTION 'Registration Trigger Error: %', SQLERRM;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created

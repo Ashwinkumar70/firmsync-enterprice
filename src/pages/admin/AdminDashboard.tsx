@@ -27,16 +27,17 @@ export const AdminDashboard: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
+      if (!user) return;
       const [u, w, d, totalU, activeU, totalW, approvedW, totalT, totalP] = await Promise.all([
-        supabase.from('users').select('*').order('created_at', { ascending: false }).limit(10),
-        supabase.from('workflows').select('status, created_at').order('created_at', { ascending: false }).limit(500),
-        supabase.from('departments').select('*'),
-        supabase.from('users').select('id', { count: 'exact', head: true }),
-        supabase.from('users').select('id', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('workflows').select('id', { count: 'exact', head: true }),
-        supabase.from('workflows').select('id', { count: 'exact', head: true }).in('status', ['approved', 'completed']),
-        supabase.from('support_tickets').select('id', { count: 'exact', head: true }),
-        supabase.from('purchase_requests').select('id', { count: 'exact', head: true }),
+        supabase.from('users').select('*').eq('company_id', user.company_id).order('created_at', { ascending: false }).limit(10),
+        supabase.from('workflows').select('status, created_at').eq('company_id', user.company_id).order('created_at', { ascending: false }).limit(500),
+        supabase.from('departments').select('*').eq('company_id', user.company_id),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id),
+        supabase.from('users').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id).eq('is_active', true),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id),
+        supabase.from('workflows').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id).in('status', ['approved', 'completed']),
+        supabase.from('support_tickets').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id),
+        supabase.from('purchase_requests').select('id', { count: 'exact', head: true }).eq('company_id', user.company_id),
       ]);
       setUsers((u.data ?? []) as UserProfile[]);
       setWorkflows(w.data ?? []);
@@ -52,7 +53,7 @@ export const AdminDashboard: React.FC = () => {
       setLoading(false);
     };
     load();
-  }, []);
+  }, [user]);
 
   // Monthly workflow trend
   const trendData = Array.from({ length: 7 }, (_, i) => {

@@ -66,13 +66,8 @@ export const LeaveRequests: React.FC = () => {
     if (!user) return;
     setSubmitting(true);
     try {
-      const start = new Date(data.start_date);
-      const end = new Date(data.end_date);
-      const diffTime = Math.abs(end.getTime() - start.getTime());
-      const daysCount = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-
       // Create workflow
-      const { data: wf } = await supabase.from('workflows').insert({
+      const { data: wf, error: wfError } = await supabase.from('workflows').insert({
         company_id: user.company_id,
         type: 'leave',
         title: `Leave Request – ${data.type}`,
@@ -81,6 +76,8 @@ export const LeaveRequests: React.FC = () => {
         department_id: user.department_id,
         priority: 'medium',
       }).select().single();
+
+      if (wfError) throw wfError;
 
       // Create leave request
       const { error: leaveError } = await supabase.from('leave_requests').insert({

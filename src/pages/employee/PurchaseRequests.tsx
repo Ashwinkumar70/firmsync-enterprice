@@ -46,15 +46,28 @@ export const PurchaseRequests: React.FC = () => {
 
   const onSubmit = async (data: FormData) => {
     if (!user) return;
-    const { data: wf } = await supabase.from('workflows').insert({
+    const { data: wf, error: wfErr } = await supabase.from('workflows').insert({
+      company_id: user.company_id,
       type: 'purchase', title: data.title, status: 'created',
       created_by: user.id, department_id: user.department_id, priority: 'medium',
     }).select().single();
-    await supabase.from('purchase_requests').insert({
+
+    if (wfErr) {
+      alert('Failed to create workflow: ' + wfErr.message);
+      return;
+    }
+
+    const { error: prErr } = await supabase.from('purchase_requests').insert({
+      company_id: user.company_id,
       requester_id: user.id, title: data.title, description: data.description ?? null,
       amount: parseFloat(data.amount), vendor: data.vendor ?? null,
       category: data.category, status: 'pending', workflow_id: wf?.id,
     });
+
+    if (prErr) {
+      alert('Failed to submit purchase request: ' + prErr.message);
+      return;
+    }
     setSuccess(true); setTimeout(() => setSuccess(false), 3000);
     reset(); setShowForm(false); fetch();
   };

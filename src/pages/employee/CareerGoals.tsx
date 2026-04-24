@@ -30,13 +30,18 @@ export const CareerGoals: React.FC = () => {
     if (!title?.trim()) return;
     
     const { error } = await supabase.from('career_goals').insert({ 
+      company_id: user.company_id,
       user_id: user.id, 
       title, 
       status: 'in_progress', 
       progress: 0 
     });
     
-    if (!error) fetchGoals();
+    if (error) {
+      alert('Failed to add career goal: ' + error.message);
+      return;
+    }
+    fetchGoals();
   };
 
   const updateGoalProgress = async (goalId: string, progress: number) => {

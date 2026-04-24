@@ -27,19 +27,19 @@ ALTER TABLE public.career_goals ENABLE ROW LEVEL SECURITY;
 CREATE OR REPLACE FUNCTION public.get_my_role()
 RETURNS TEXT AS $$
   SELECT role FROM public.users WHERE id = auth.uid();
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, auth;
 
 -- Helper function to get current user's department
 CREATE OR REPLACE FUNCTION public.get_my_department()
 RETURNS UUID AS $$
   SELECT department_id FROM public.users WHERE id = auth.uid();
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, auth;
 
 -- Helper function to get current user's company_id
 CREATE OR REPLACE FUNCTION public.get_my_company()
 RETURNS UUID AS $$
   SELECT company_id FROM public.users WHERE id = auth.uid();
-$$ LANGUAGE SQL SECURITY DEFINER STABLE;
+$$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, auth;
 
 -- ============================================================
 -- COMPANIES TABLE POLICIES
@@ -65,6 +65,11 @@ DROP POLICY IF EXISTS "departments_read_all" ON public.departments;
 CREATE POLICY "departments_read_all" ON public.departments 
   FOR SELECT USING (company_id = get_my_company());
 
+-- Allow anonymous users to read departments during employee signup
+DROP POLICY IF EXISTS "departments_anon_read" ON public.departments;
+CREATE POLICY "departments_anon_read" ON public.departments
+  FOR SELECT TO anon USING (true);
+
 DROP POLICY IF EXISTS "departments_admin_all" ON public.departments;
 CREATE POLICY "departments_admin_all" ON public.departments 
   FOR ALL USING (company_id = get_my_company() AND get_my_role() = 'admin');
@@ -79,25 +84,16 @@ CREATE POLICY "users_view_own" ON public.users
 DROP POLICY IF EXISTS "users_manager_view_dept" ON public.users;
 CREATE POLICY "users_manager_view_dept" ON public.users
   FOR SELECT USING (
-    -- Non-recursive role/dept check
-    EXISTS (
-      SELECT 1 FROM public.users me
-      WHERE me.id = auth.uid() 
-      AND me.role = 'manager' 
-      AND me.department_id = public.users.department_id
-      AND me.company_id = public.users.company_id
-    )
+    get_my_role() = 'manager' 
+    AND department_id = get_my_department()
+    AND company_id = get_my_company()
   );
 
 DROP POLICY IF EXISTS "users_hr_view_all" ON public.users;
 CREATE POLICY "users_hr_view_all" ON public.users
   FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.users me
-      WHERE me.id = auth.uid() 
-      AND me.role IN ('hr', 'admin')
-      AND me.company_id = public.users.company_id
-    )
+    get_my_role() IN ('hr', 'admin')
+    AND company_id = get_my_company()
   );
 
 DROP POLICY IF EXISTS "users_update_own" ON public.users;
@@ -107,12 +103,7 @@ CREATE POLICY "users_update_own" ON public.users
 DROP POLICY IF EXISTS "users_admin_all" ON public.users;
 CREATE POLICY "users_admin_all" ON public.users
   FOR ALL USING (
-    EXISTS (
-      SELECT 1 FROM public.users me
-      WHERE me.id = auth.uid() 
-      AND me.role = 'admin'
-      AND me.company_id = public.users.company_id
-    )
+    get_my_role() = 'admin' AND company_id = get_my_company()
   );
 
 -- ============================================================

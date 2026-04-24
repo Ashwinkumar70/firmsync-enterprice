@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import type { UserProfile, Department } from '../../lib/types';
 import { Edit2, ToggleLeft, ToggleRight, Search, Trash2 } from 'lucide-react';
 
 type UserRole = 'admin' | 'manager' | 'hr' | 'employee';
 
 export const UserManagement: React.FC = () => {
+  const { user } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,16 +18,17 @@ export const UserManagement: React.FC = () => {
   const [message, setMessage] = useState('');
 
   const fetchAll = async () => {
+    if (!user) return;
     const [u, d] = await Promise.all([
-      supabase.from('users').select('*').order('created_at', { ascending: false }),
-      supabase.from('departments').select('*').order('name'),
+      supabase.from('users').select('*').eq('company_id', user.company_id).order('created_at', { ascending: false }),
+      supabase.from('departments').select('*').eq('company_id', user.company_id).order('name'),
     ]);
     setUsers((u.data ?? []) as UserProfile[]);
     setDepartments((d.data ?? []) as Department[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [user]);
 
   const updateUser = async () => {
     if (!editUser) return;
@@ -37,7 +40,7 @@ export const UserManagement: React.FC = () => {
       full_name: form.full_name,
       role: form.role,
       department_id: finalDeptId,
-    }).eq('id', editUser.id);
+    }).eq('id', editUser.id).eq('company_id', user.company_id);
     
     if (error) {
       alert(`Error updating user: ${error.message}`);
@@ -51,14 +54,15 @@ export const UserManagement: React.FC = () => {
   };
 
   const toggleActive = async (u: UserProfile) => {
-    await supabase.from('users').update({ is_active: !u.is_active }).eq('id', u.id);
+    if (!user) return;
+    await supabase.from('users').update({ is_active: !u.is_active }).eq('id', u.id).eq('company_id', user.company_id);
     fetchAll();
   };
 
   const deleteUser = async (u: UserProfile) => {
-    if (!window.confirm(`Are you sure you want to permanently delete ${u.full_name || u.email}? This action cannot be undone.`)) return;
+    if (!window.confirm(`Are you sure you want to permanently delete ${u.full_name || u.email}? This action cannot be undone.`) || !user) return;
     
-    const { error } = await supabase.from('users').delete().eq('id', u.id);
+    const { error } = await supabase.from('users').delete().eq('id', u.id).eq('company_id', user.company_id);
     if (error) {
       alert(`Error deleting user: ${error.message}`);
     } else {

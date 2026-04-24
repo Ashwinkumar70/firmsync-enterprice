@@ -25,8 +25,12 @@ export const WorkflowReview: React.FC = () => {
   const [comment, setComment] = useState('');
   const [processing, setProcessing] = useState(false);
 
-  const fetch = async () => {
+  const fetchWorkflows = async () => {
     if (!user) return;
+    if (!user.department_id) {
+      setLoading(false);
+      return;
+    }
     let query = supabase
       .from('workflows')
       .select('*, creator:users!created_by(full_name, email), workflow_steps(*)')
@@ -41,7 +45,7 @@ export const WorkflowReview: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetch(); }, [user, filter]);
+  useEffect(() => { fetchWorkflows(); }, [user, filter]);
 
   const handleAction = async (action: 'approved' | 'rejected') => {
     if (!selectedWf || !user) return;
@@ -54,6 +58,7 @@ export const WorkflowReview: React.FC = () => {
     }).eq('id', selectedWf.id);
 
     await supabase.from('workflow_steps').insert({
+      company_id: user.company_id,
       workflow_id: selectedWf.id,
       step_order: 1,
       step_name: 'Manager Review',
@@ -76,7 +81,7 @@ export const WorkflowReview: React.FC = () => {
     setComment('');
     setSelectedWf(null);
     setProcessing(false);
-    fetch();
+    fetchWorkflows();
   };
 
   return (
@@ -95,6 +100,13 @@ export const WorkflowReview: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {!user?.department_id && (
+        <div className="alert alert-warning" style={{ marginBottom: 24 }}>
+          ⚠ <strong>No department assigned.</strong> You are not currently assigned to a department. 
+          Ask your admin to assign you to a department to see and review your team's workflows.
+        </div>
+      )}
 
       <div className="grid-2">
         {/* Workflow list */}

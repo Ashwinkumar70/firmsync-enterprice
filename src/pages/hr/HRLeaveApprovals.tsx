@@ -88,6 +88,7 @@ export const HRLeaveApprovals: React.FC = () => {
 
     const label = newStatus === 'rejected' ? 'rejected' : 'approved';
     await supabase.from('notifications').insert({
+      company_id: targetRequest?.company_id,
       user_id: employeeId,
       title: `Leave ${label === 'approved' ? 'Approved ✅' : 'Rejected ❌'}`,
       message: `Your ${leaveType} leave request has been ${label} by HR.${comment ? ` Note: "${comment}"` : ''}`,

@@ -32,12 +32,18 @@ export const SkillProfile: React.FC = () => {
 
   const addSkill = async () => {
     if (!user || !newSkill.skill_name.trim()) return;
-    await supabase.from('employee_skills').upsert({
+    const { error } = await supabase.from('employee_skills').upsert({
+      company_id: user.company_id,
       user_id: user.id,
       skill_name: newSkill.skill_name,
       category: newSkill.category,
       level: newSkill.level,
     });
+
+    if (error) {
+      alert('Failed to add skill: ' + error.message);
+      return;
+    }
     setNewSkill({ skill_name: '', category: 'technical', level: 'beginner' });
     setShowSkillForm(false);
     fetchAll();
@@ -47,7 +53,18 @@ export const SkillProfile: React.FC = () => {
     if (!user) return;
     const title = prompt('Enter your career goal:');
     if (!title?.trim()) return;
-    await supabase.from('career_goals').insert({ user_id: user.id, title, status: 'in_progress', progress: 0 });
+    const { error } = await supabase.from('career_goals').insert({ 
+      company_id: user.company_id,
+      user_id: user.id, 
+      title, 
+      status: 'in_progress', 
+      progress: 0 
+    });
+
+    if (error) {
+      alert('Failed to add career goal: ' + error.message);
+      return;
+    }
     fetchAll();
   };
 

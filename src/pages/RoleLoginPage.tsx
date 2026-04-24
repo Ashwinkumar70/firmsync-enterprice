@@ -24,7 +24,7 @@ const loginSchema = z.object({
   password: z.string().min(6, 'At least 6 characters'),
 });
 const signupSchema = loginSchema.extend({
-  joinCode:   z.string().min(8, 'Join code is 8 characters'),
+  joinCode:   z.string().min(3, 'Join code must be at least 3 characters'),
   full_name: z.string().min(2, 'Full name is required'),
   phone:      z.string().min(10, 'Enter a valid phone number'),
   location:   z.string().min(2, 'Location is required'),
@@ -168,6 +168,8 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
   const [verifiedCompany, setVerifiedCompany] = useState<{id: string, name: string} | null>(null);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [joinCodeInput, setJoinCodeInput] = useState('');
+  const debounceRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const roleLabel = title.replace(' Portal', '');
 
   /* ── Preload Background Image ── */
@@ -177,38 +179,64 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
     img.onload = () => setImgLoaded(true);
   }, [cfg.bgImage]);
 
-  /* ── Join Code Verification ── */
+  /* ── Join Code Verification (debounced) ── */
   const verifyJoinCode = async (code: string) => {
-    if (code.length < 8) return;
+    const trimmed = code.trim().toUpperCase();
+    if (trimmed.length < 3) {
+      setVerifiedCompany(null);
+      setDepartments([]);
+      return;
+    }
     setIsVerifyingCode(true);
     setAuthError(null);
     try {
       const { data: company, error } = await supabase
         .from('companies')
         .select('id, name')
-        .eq('join_code', code.toUpperCase())
+        .eq('join_code', trimmed)
         .single();
       
       if (error || !company) {
         setVerifiedCompany(null);
         setDepartments([]);
-        throw new Error('Invalid join code. Please check with your administrator.');
+        setAuthError('No company found with this code. Please check with your administrator.');
+        return;
       }
 
       setVerifiedCompany(company);
+      setAuthError(null);
       
       // Fetch departments for THIS company
-      const { data: depts } = await supabase
+      const { data: depts, error: deptsError } = await supabase
         .from('departments')
         .select('id, name')
-        .eq('company_id', company.id);
+        .eq('company_id', company.id)
+        .order('name');
       
-      if (depts) setDepartments(depts);
+      if (deptsError) {
+        console.error('[RoleLoginPage] Dept fetch error:', deptsError);
+        setDepartments([]);
+        return;
+      }
+
+      if (depts && depts.length > 0) {
+        console.log('[RoleLoginPage] Departments found:', depts);
+        setDepartments(depts);
+      } else {
+        console.warn('[RoleLoginPage] No departments found for company:', company.name);
+        setDepartments([]);
+      }
     } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Failed to verify code');
+      console.error('[RoleLoginPage] Fetch error:', err);
     } finally {
       setIsVerifyingCode(false);
     }
+  };
+
+  // Debounced wrapper — only fires after user stops typing for 600ms
+  const debouncedVerify = (code: string) => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => verifyJoinCode(code), 600);
   };
 
   /* ── Sign-in ─────────────────────────────────── */
@@ -599,31 +627,40 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
             <form onSubmit={hsS(onSignUp)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Company Join Code</label>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                   <div style={{ flex: 1 }}>
                     <Input 
                       {...regS('joinCode')} 
                       icon={<Shield size={15} />} 
                       error={errS.joinCode?.message} 
                       accent={cfg.accent} 
-                      placeholder="ENTER8CODE" 
+                      placeholder="e.g. ACME123" 
                       onChange={(e) => {
                         regS('joinCode').onChange(e);
-                        if (e.target.value.length === 8) verifyJoinCode(e.target.value);
+                        setJoinCodeInput(e.target.value);
+                        // Reset state when user clears field
+                        if (e.target.value.length < 3) {
+                          setVerifiedCompany(null);
+                          setDepartments([]);
+                          setAuthError(null);
+                        } else {
+                          debouncedVerify(e.target.value);
+                        }
                       }}
                     />
                   </div>
                   {verifiedCompany && (
                     <div style={{ 
-                      padding: '0 16px', borderRadius: 12, background: '#F0FDF4', 
+                      padding: '10px 16px', borderRadius: 12, background: '#F0FDF4', 
                       border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', 
-                      gap: 8, color: '#166534', fontSize: 12, fontWeight: 700 
+                      gap: 8, color: '#166534', fontSize: 12, fontWeight: 700,
+                      whiteSpace: 'nowrap'
                     }}>
                       <CheckCircle size={14} /> {verifiedCompany.name}
                     </div>
                   )}
                   {isVerifyingCode && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748B' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748B', padding: '10px 0' }}>
                       <span className="spinner small" /> Verifying...
                     </div>
                   )}
@@ -663,11 +700,23 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
                     {...regS('department_id')}
                     className={`form-input ${errS.department_id ? 'error' : ''}`}
                     style={{ background: '#F8FAFC', padding: '12px', height: '48.5px' }}
+                    disabled={!verifiedCompany || departments.length === 0}
                   >
-                    <option value="">Select Department</option>
+                    <option value="">
+                      {!verifiedCompany
+                        ? '— Enter join code first —'
+                        : departments.length === 0
+                          ? '— No departments available —'
+                          : 'Select Department'}
+                    </option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                   {errS.department_id && <div style={{ marginTop: 5, fontSize: 12, color: '#EF4444' }}>{errS.department_id.message}</div>}
+                  {verifiedCompany && departments.length === 0 && (
+                    <div style={{ marginTop: 5, fontSize: 12, color: '#F59E0B' }}>
+                      ⚠️ Your company has no departments configured yet. Contact your admin.
+                    </div>
+                  )}
                 </div>
               </div>
 

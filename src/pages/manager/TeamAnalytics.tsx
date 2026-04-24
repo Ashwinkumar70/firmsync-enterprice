@@ -14,7 +14,7 @@ export const TeamAnalytics: React.FC = () => {
 
   useEffect(() => {
     const load = async () => {
-      if (!user) return;
+      if (!user.department_id) return;
       // Fetch workflow stats for the last 6 months
       const { data: wfs } = await supabase
         .from('workflows')
@@ -46,6 +46,13 @@ export const TeamAnalytics: React.FC = () => {
         <h1 className="page-title">Team Analytics</h1>
         <p className="page-subtitle">Visualizing department performance and workflow efficiency</p>
       </div>
+
+      {!user?.department_id && (
+        <div className="alert alert-warning" style={{ marginBottom: 24 }}>
+          ⚠ <strong>No department assigned.</strong> You are not currently assigned to a department. 
+          Please ask your admin to assign you to a department to see analytics.
+        </div>
+      )}
 
       <div className="grid-2" style={{ gap: 24, marginBottom: 24 }}>
         {/* Workflow Efficiency */}

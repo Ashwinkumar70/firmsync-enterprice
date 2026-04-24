@@ -83,6 +83,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (mounted) {
         if (!profile) {
           console.warn('[AuthContext] Profile fetch returned null for user:', currentSession.user.id);
+          // Sign out orphaned users to prevent infinite redirect loop
+          await supabase.auth.signOut();
+          setSession(null);
         }
         setUser(profile);
         setLoading(false);

@@ -65,7 +65,7 @@ export const ProjectSubmission: React.FC = () => {
 
   const onCreateProject = async (data: ProjectForm) => {
     if (!user) return;
-    await supabase.from('projects').insert({
+    const { error } = await supabase.from('projects').insert({
       company_id: user.company_id,
       name: data.name,
       description: data.description ?? null,
@@ -74,6 +74,12 @@ export const ProjectSubmission: React.FC = () => {
       due_date: data.due_date || null,
       status: 'active',
     });
+    
+    if (error) {
+      alert('Failed to create project: ' + error.message);
+      return;
+    }
+
     setSuccess('Project created!');
     setTimeout(() => setSuccess(''), 3000);
     resetProject();
@@ -96,7 +102,7 @@ export const ProjectSubmission: React.FC = () => {
 
   const onSubmitUpdate = async (data: UpdateForm) => {
     if (!user || !selectedProject) return;
-    await supabase.from('project_updates').insert({
+    const { error } = await supabase.from('project_updates').insert({
       company_id: user.company_id,
       project_id: selectedProject.id,
       author_id: user.id,
@@ -105,6 +111,12 @@ export const ProjectSubmission: React.FC = () => {
       file_url: uploadedFile?.url ?? null,
       file_name: uploadedFile?.name ?? null,
     });
+
+    if (error) {
+      alert('Failed to submit update: ' + error.message);
+      return;
+    }
+
     resetUpdate();
     setUploadedFile(null);
     setSuccess('Update submitted!');

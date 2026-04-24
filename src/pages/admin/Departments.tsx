@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { PageWrapper } from '../../components/layout/PageWrapper';
 import { supabase } from '../../lib/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Department, UserProfile } from '../../lib/types';
 import { Plus, Edit2, Trash2, Users } from 'lucide-react';
 
 export const Departments: React.FC = () => {
+  const { user } = useAuth();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [managers, setManagers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,23 +16,31 @@ export const Departments: React.FC = () => {
   const [message, setMessage] = useState('');
 
   const fetchAll = async () => {
+    if (!user) return;
     const [d, m] = await Promise.all([
-      supabase.from('departments').select('*').order('name'),
-      supabase.from('users').select('id, full_name, email').eq('role', 'manager'),
+      supabase.from('departments').select('*').eq('company_id', user.company_id).order('name'),
+      supabase.from('users').select('id, full_name, email').eq('company_id', user.company_id).eq('role', 'manager'),
     ]);
     setDepartments((d.data ?? []) as Department[]);
     setManagers((m.data ?? []) as UserProfile[]);
     setLoading(false);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll(); }, [user]);
 
   const save = async () => {
-    if (!form.name.trim()) return;
+    if (!form.name.trim() || !user) return;
     if (editId) {
-      await supabase.from('departments').update({ name: form.name, manager_id: form.manager_id || null }).eq('id', editId);
+      await supabase.from('departments').update({ 
+        name: form.name, 
+        manager_id: form.manager_id || null 
+      }).eq('id', editId).eq('company_id', user.company_id);
     } else {
-      await supabase.from('departments').insert({ name: form.name, manager_id: form.manager_id || null });
+      await supabase.from('departments').insert({ 
+        company_id: user.company_id,
+        name: form.name, 
+        manager_id: form.manager_id || null 
+      });
     }
     setForm({ name: '', manager_id: '' });
     setEditId(null);
@@ -41,8 +51,8 @@ export const Departments: React.FC = () => {
   };
 
   const deleteDept = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this department?')) return;
-    await supabase.from('departments').delete().eq('id', id);
+    if (!confirm('Are you sure you want to delete this department?') || !user) return;
+    await supabase.from('departments').delete().eq('id', id).eq('company_id', user.company_id);
     fetchAll();
   };
 

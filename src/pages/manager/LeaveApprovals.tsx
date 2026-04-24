@@ -86,6 +86,7 @@ export const LeaveApprovals: React.FC = () => {
     // Notify the employee
     const actionLabel = newStatus === 'manager_approved' ? 'approved' : 'rejected';
     await supabase.from('notifications').insert({
+      company_id: user.company_id,
       user_id: employeeId,
       title: `Leave ${actionLabel === 'approved' ? 'Approved ✅' : 'Rejected ❌'}`,
       message: `Your ${leaveType} leave request has been ${actionLabel} by your manager.${comment ? ` Comment: "${comment}"` : ''}`,
