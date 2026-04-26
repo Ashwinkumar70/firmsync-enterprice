@@ -1,0 +1,1 @@
+import{j as o}from"./index-pCRzqjjk.js";import"./vendor-react-D2X5qBQ4.js";import{R as t}from"./RoleLoginPage-qmy73Pa8.js";import"./vendor-supabase-CpRTRdvQ.js";import"./vendor-forms-qR6lDtMM.js";import"./zod-BXB0iEXI.js";import"./vendor-icons-CYXJW18d.js";const a=()=>o.jsx(t,{portalRole:"employee",title:"Employee Portal",showSignup:!0});export{a as EmployeeLogin};
