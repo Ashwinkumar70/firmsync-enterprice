@@ -12,12 +12,12 @@ import {
 
 const registerSchema = z.object({
   company_name: z.string().min(2, 'Company name is too short'),
-  company_code: z.string().min(3, 'Code must be at least 3 characters').max(10, 'Code too long').regex(/^[A-Z0-9]+$/i, 'Only letters and numbers allowed'),
+  company_code: z.string().max(10, 'Code too long').regex(/^[A-Z0-9]*$/i, 'Only letters and numbers allowed').optional(),
   full_name: z.string().min(2, 'Full name is too short'),
   email:         z.string().email('Enter a valid email address'),
   password:      z.string().min(6, 'At least 6 characters'),
   confirm:       z.string(),
-  departments:   z.string().optional(),
+  departments:   z.array(z.string()).optional(),
 }).refine(d => d.password === d.confirm, {
   message: "Passwords don't match", path: ['confirm'],
 });
@@ -99,8 +99,8 @@ export const RegisterCompany: React.FC = () => {
           data: {
             full_name: data.full_name,
             company_name: data.company_name,
-            company_code: data.company_code.toUpperCase(),
-            departments: data.departments ? data.departments.split(',').map(d => d.trim()).filter(d => d.length > 0) : null,
+            company_code: data.company_code ? data.company_code.toUpperCase() : '',
+            departments: data.departments && data.departments.length > 0 ? data.departments : null,
             is_company_registration: 'true',
           },
           emailRedirectTo: redirectUrl,
@@ -277,16 +277,56 @@ export const RegisterCompany: React.FC = () => {
               )}
 
               <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Name</label>
-                    <Input {...register('company_name')} icon={<Building2 size={16} />} placeholder="Acme Corp" error={errors.company_name?.message} accent={accent} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Code</label>
-                    <Input {...register('company_code')} icon={<Zap size={16} />} placeholder="ACME123" error={errors.company_code?.message} accent={accent} />
+                <div>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Name</label>
+                  <Input {...register('company_name')} icon={<Building2 size={16} />} placeholder="Acme Corp" error={errors.company_name?.message} accent={accent} />
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Company Code</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ flex: 1 }}>
+                      <Input 
+                        {...register('company_code')} 
+                        icon={<Zap size={16} />} 
+                        placeholder="e.g. ACME123 (Optional)" 
+                        error={errors.company_code?.message} 
+                        accent={accent} 
+                        style={{ textTransform: 'uppercase' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const code = Math.random().toString(36).substring(2, 8).toUpperCase();
+                        const el = document.querySelector('input[name="company_code"]') as HTMLInputElement;
+                        if (el) {
+                          el.value = code;
+                          // Trigger react-hook-form change
+                          el.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                      }}
+                      style={{
+                        padding: '0 20px',
+                        background: 'rgba(99, 102, 241, 0.1)',
+                        border: '1.5px solid rgba(99, 102, 241, 0.2)',
+                        borderRadius: '14px',
+                        color: accent,
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        height: '48.5px',
+                        transition: 'all 0.2s',
+                        whiteSpace: 'nowrap'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)'}
+                    >
+                      Generate Code
+                    </button>
                   </div>
                 </div>
+
 
                 <div>
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>Admin Full Name</label>
@@ -310,28 +350,53 @@ export const RegisterCompany: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 8 }}>
-                    Initial Departments (Optional)
+                  <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 12 }}>
+                    Initial Departments
                   </label>
-                  <textarea 
-                    {...register('departments')}
-                    placeholder="Engineering, HR, Sales, Marketing..."
-                    style={{
-                      width: '100%', boxSizing: 'border-box',
-                      padding: '12px',
-                      background: 'rgba(255, 255, 255, 0.4)',
-                      backdropFilter: 'blur(4px)',
-                      border: '1.5px solid rgba(255, 255, 255, 0.5)',
-                      borderRadius: 14, color: '#0F172A', fontSize: 14,
-                      outline: 'none', fontFamily: 'inherit',
-                      minHeight: 80, resize: 'vertical',
-                      transition: 'all 0.2s',
-                    }}
-                  />
-                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 4 }}>
-                    Separate departments with commas. We'll create these for your workspace automatically.
+                  <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', 
+                    gap: '10px',
+                    background: 'rgba(255, 255, 255, 0.4)',
+                    padding: '16px',
+                    borderRadius: '14px',
+                    border: '1.5px solid rgba(255, 255, 255, 0.5)'
+                  }}>
+                    {['Engineering', 'HR', 'Sales', 'Marketing', 'Finance', 'IT', 'Operations', 'Customer Support'].map(dept => (
+                      <label key={dept} style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '8px', 
+                        fontSize: '13px', 
+                        color: '#1E293B',
+                        cursor: 'pointer',
+                        padding: '6px 8px',
+                        borderRadius: '8px',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.05)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <input 
+                          type="checkbox" 
+                          value={dept}
+                          {...register('departments')}
+                          style={{ 
+                            width: '16px', 
+                            height: '16px', 
+                            accentColor: accent,
+                            cursor: 'pointer'
+                          }}
+                        />
+                        {dept}
+                      </label>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 11, color: '#64748B', marginTop: 8 }}>
+                    Select the departments you want to initialize for your workspace.
                   </p>
                 </div>
+
 
                 <button
                   type="submit"

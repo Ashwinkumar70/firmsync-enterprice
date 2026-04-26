@@ -72,6 +72,42 @@ export const UserManagement: React.FC = () => {
     }
   };
 
+  const [showCreate, setShowCreate] = useState(false);
+  const [createForm, setCreateForm] = useState({ email: '', password: '', full_name: '', role: 'manager' as UserRole, department_id: '' });
+  const [creating, setCreating] = useState(false);
+
+  const createNewUser = async () => {
+    if (!user) return;
+    if (!createForm.email || !createForm.password || !createForm.full_name) {
+      alert("Please fill in all required fields (Name, Email, Password).");
+      return;
+    }
+
+    setCreating(true);
+    
+    // Call the Edge Function to provision the user
+    const { data, error } = await supabase.functions.invoke('create-user', {
+      body: {
+        ...createForm,
+        company_id: user.company_id,
+        department_id: createForm.department_id || null
+      }
+    });
+
+    if (error || data?.error) {
+      alert(`Error creating user: ${error?.message || data?.error}`);
+      setCreating(false);
+      return;
+    }
+
+    setShowCreate(false);
+    setCreateForm({ email: '', password: '', full_name: '', role: 'manager', department_id: '' });
+    setMessage(`${createForm.role.toUpperCase()} account created successfully!`);
+    setTimeout(() => setMessage(''), 3000);
+    fetchAll();
+    setCreating(false);
+  };
+
   const filtered = users.filter(u =>
     u.email.toLowerCase().includes(search.toLowerCase()) ||
     u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -82,14 +118,85 @@ export const UserManagement: React.FC = () => {
 
   return (
     <PageWrapper pageTitle="User Management">
-      <div className="page-header-row">
+      <div className="page-header-row" style={{ marginBottom: 32 }}>
         <div>
-          <h1 className="page-title">User Management</h1>
-          <p className="page-subtitle">Manage accounts, roles, and departments</p>
+          <h1 className="page-title" style={{ fontSize: 28, fontWeight: 800 }}>User Management</h1>
+          <p className="page-subtitle" style={{ color: 'var(--text-secondary)' }}>
+            Provision staff accounts and manage organizational access
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button className="btn btn-secondary" onClick={fetchAll}>
+             Refresh List
+          </button>
+          <button className="btn btn-primary" onClick={() => setShowCreate(true)} style={{ boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}>
+            + Add Staff Member
+          </button>
         </div>
       </div>
 
       {message && <div className="alert alert-success">✓ {message}</div>}
+
+      {/* Create Modal */}
+      {showCreate && (
+        <div className="modal-overlay active">
+          <div className="modal" style={{ maxWidth: 500, borderRadius: 20, overflow: 'hidden' }}>
+            <div className="modal-header" style={{ background: 'linear-gradient(135deg, #6366F1 0%, #4338CA 100%)', color: 'white', padding: '24px' }}>
+              <div>
+                <div className="modal-title" style={{ color: 'white', fontSize: 20 }}>Create Staff Member</div>
+                <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4 }}>Assign roles and departments within your workspace</div>
+              </div>
+              <button className="btn btn-icon" onClick={() => setShowCreate(false)} style={{ color: 'white' }}>✕</button>
+            </div>
+            
+            <div className="modal-body" style={{ padding: '32px' }}>
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input className="form-input" placeholder="e.g. John Doe" value={createForm.full_name} onChange={e => setCreateForm(f => ({ ...f, full_name: e.target.value }))} />
+              </div>
+              
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Work Email</label>
+                  <input className="form-input" type="email" placeholder="staff@company.com" value={createForm.email} onChange={e => setCreateForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Temporary Password</label>
+                  <input className="form-input" type="password" placeholder="••••••••" value={createForm.password} onChange={e => setCreateForm(f => ({ ...f, password: e.target.value }))} />
+                </div>
+              </div>
+
+              <div className="form-row" style={{ marginTop: 12 }}>
+                <div className="form-group">
+                  <label className="form-label">Assign Role</label>
+                  <select className="form-input" value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value as UserRole }))}>
+                    <option value="manager">Team Manager</option>
+                    <option value="hr">HR Personnel</option>
+                    <option value="admin">Secondary Admin</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Department</label>
+                  <select className="form-input" value={createForm.department_id} onChange={e => setCreateForm(f => ({ ...f, department_id: e.target.value }))}>
+                    <option value="">Select Department</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                  {departments.length === 0 && (
+                    <p style={{ fontSize: 10, color: '#EF4444', marginTop: 4 }}>⚠️ No departments found in this workspace.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="modal-footer" style={{ background: '#F8FAFC', padding: '20px 32px' }}>
+              <button className="btn btn-secondary" onClick={() => setShowCreate(false)}>Cancel</button>
+              <button className="btn btn-primary" onClick={createNewUser} disabled={creating} style={{ minWidth: 140 }}>
+                {creating ? <div className="spinner small" /> : 'Create Account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit modal */}
       {editUser && (

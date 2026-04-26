@@ -449,19 +449,37 @@ BEGIN
       RETURN NEW;
     END IF;
 
-    INSERT INTO public.users (id, company_id, email, full_name, role)
+    INSERT INTO public.users (
+      id, 
+      company_id, 
+      email, 
+      full_name, 
+      role,
+      phone,
+      location,
+      employee_id_string,
+      department_id
+    )
     VALUES (
       NEW.id,
       (NEW.raw_user_meta_data->>'company_id')::uuid,
       NEW.email,
       v_full_name,
-      COALESCE(NEW.raw_user_meta_data->>'role', 'employee')
+      COALESCE(NEW.raw_user_meta_data->>'role', 'employee'),
+      NEW.raw_user_meta_data->>'phone',
+      NEW.raw_user_meta_data->>'location',
+      NEW.raw_user_meta_data->>'employee_id_string',
+      (NEW.raw_user_meta_data->>'department_id')::uuid
     )
     ON CONFLICT (id) DO UPDATE SET
       company_id = EXCLUDED.company_id,
       email = EXCLUDED.email,
       full_name = EXCLUDED.full_name,
-      role = EXCLUDED.role;
+      role = EXCLUDED.role,
+      phone = EXCLUDED.phone,
+      location = EXCLUDED.location,
+      employee_id_string = EXCLUDED.employee_id_string,
+      department_id = EXCLUDED.department_id;
   END IF;
   
   RETURN NEW;
@@ -470,6 +488,13 @@ EXCEPTION WHEN OTHERS THEN
   RAISE EXCEPTION 'Registration Trigger Error: %', SQLERRM;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, auth, extensions;
+
+
+-- Add unique constraint to employee_id_string per company
+-- This ensures that within a company, employee IDs are unique
+ALTER TABLE public.users DROP CONSTRAINT IF EXISTS users_employee_id_string_key;
+ALTER TABLE public.users ADD CONSTRAINT users_employee_id_string_company_unique UNIQUE (company_id, employee_id_string);
+
 
 
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;

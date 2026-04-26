@@ -293,36 +293,47 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
 
       const redirectTo = `${window.location.origin}${import.meta.env.BASE_URL}`;
       const { data: authData, error } = await supabase.auth.signUp({
-        email: data.email, password: data.password,
+        email: data.email, 
+        password: data.password,
         options: { 
           data: { 
             full_name: data.full_name,
             company_id: verifiedCompany.id,
-            role: portalRole
+            role: portalRole,
+            phone: data.phone,
+            location: data.location,
+            employee_id_string: data.employee_id_string,
+            department_id: data.department_id,
           },
           emailRedirectTo: redirectTo
         },
       });
+      
       if (error) throw error;
       if (!authData.user) throw new Error('Sign-up failed. Please try again.');
 
-      await supabase.from('users').upsert({
-        id: authData.user.id,
-        company_id: verifiedCompany.id,
-        email: data.email,
-        full_name: data.full_name,
-        role: portalRole as any,
-        phone: data.phone,
-        location: data.location,
-        employee_id_string: data.employee_id_string,
-        department_id: data.department_id,
-        is_active: true,
-      });
+      // No manual upsert needed - the handle_new_user trigger in the DB 
+      // will create the public.users record automatically using the metadata above.
       setSignupDone(true);
-    } catch (err: unknown) {
-      setAuthError(err instanceof Error ? err.message : 'Sign-up failed');
+    } catch (err: any) {
+
+      let msg = err?.message || 'Sign-up failed';
+      
+      // Map common database errors to user-friendly messages
+      if (msg.includes('users_employee_id_string_company_unique')) {
+        msg = 'This Employee ID is already registered for this company. Please verify your ID.';
+      } else if (msg.includes('users_email_key') || msg.includes('User already registered')) {
+        msg = 'This email address is already in use. Please sign in instead.';
+      } else if (msg.includes('Registration Trigger Error')) {
+        // Clean up the trigger error message for the user
+        msg = msg.replace('Registration Trigger Error: ', '');
+      }
+      
+      setAuthError(msg);
     }
   };
+
+
 
   /* ── Render ──────────────────────────────────── */
   return (
@@ -627,45 +638,54 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
             <form onSubmit={hsS(onSignUp)} noValidate style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Company Join Code</label>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1 }}>
-                    <Input 
-                      {...regS('joinCode')} 
-                      icon={<Shield size={15} />} 
-                      error={errS.joinCode?.message} 
-                      accent={cfg.accent} 
-                      placeholder="e.g. ACME123" 
-                      onChange={(e) => {
-                        regS('joinCode').onChange(e);
-                        setJoinCodeInput(e.target.value);
-                        // Reset state when user clears field
-                        if (e.target.value.length < 3) {
-                          setVerifiedCompany(null);
-                          setDepartments([]);
-                          setAuthError(null);
-                        } else {
-                          debouncedVerify(e.target.value);
-                        }
-                      }}
-                    />
+                <div style={{ position: 'relative' }}>
+                  <Input 
+                    {...regS('joinCode')} 
+                    icon={<Shield size={15} />} 
+                    error={errS.joinCode?.message} 
+                    accent={cfg.accent} 
+                    placeholder="e.g. ACME123" 
+                    onChange={(e) => {
+                      regS('joinCode').onChange(e);
+                      setJoinCodeInput(e.target.value);
+                      if (e.target.value.length < 3) {
+                        setVerifiedCompany(null);
+                        setDepartments([]);
+                        setAuthError(null);
+                      } else {
+                        debouncedVerify(e.target.value);
+                      }
+                    }}
+                    style={{ textTransform: 'uppercase' }}
+                  />
+                  
+                  {/* Status Indicator (Absolute positioned or below) */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'flex-end', 
+                    marginTop: (verifiedCompany || isVerifyingCode) ? 8 : 0,
+                    height: (verifiedCompany || isVerifyingCode) ? 'auto' : 0,
+                    overflow: 'hidden',
+                    transition: 'all 0.3s'
+                  }}>
+                    {verifiedCompany && (
+                      <div style={{ 
+                        padding: '6px 12px', borderRadius: 10, background: '#F0FDF4', 
+                        border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', 
+                        gap: 6, color: '#166534', fontSize: 11, fontWeight: 700,
+                      }}>
+                        <CheckCircle size={12} /> Verified: {verifiedCompany.name}
+                      </div>
+                    )}
+                    {isVerifyingCode && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#64748B' }}>
+                        <span className="spinner small" /> Verifying code...
+                      </div>
+                    )}
                   </div>
-                  {verifiedCompany && (
-                    <div style={{ 
-                      padding: '10px 16px', borderRadius: 12, background: '#F0FDF4', 
-                      border: '1px solid #BBF7D0', display: 'flex', alignItems: 'center', 
-                      gap: 8, color: '#166534', fontSize: 12, fontWeight: 700,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      <CheckCircle size={14} /> {verifiedCompany.name}
-                    </div>
-                  )}
-                  {isVerifyingCode && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: '#64748B', padding: '10px 0' }}>
-                      <span className="spinner small" /> Verifying...
-                    </div>
-                  )}
                 </div>
               </div>
+
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div>
@@ -698,10 +718,24 @@ export const RoleLoginPage: React.FC<RoleLoginPageProps> = ({
                   <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 7 }}>Department</label>
                   <select 
                     {...regS('department_id')}
-                    className={`form-input ${errS.department_id ? 'error' : ''}`}
-                    style={{ background: '#F8FAFC', padding: '12px', height: '48.5px' }}
+                    style={{ 
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.4)',
+                      backdropFilter: 'blur(4px)',
+                      padding: '12px 14px', 
+                      height: '48.5px',
+                      border: `1.5px solid ${errS.department_id ? '#EF4444' : 'rgba(255, 255, 255, 0.5)'}`,
+                      borderRadius: 14,
+                      color: '#0F172A',
+                      fontSize: 14,
+                      outline: 'none',
+                      fontFamily: 'inherit',
+                      appearance: 'none',
+                      cursor: !verifiedCompany ? 'not-allowed' : 'pointer',
+                    }}
                     disabled={!verifiedCompany || departments.length === 0}
                   >
+
                     <option value="">
                       {!verifiedCompany
                         ? '— Enter join code first —'

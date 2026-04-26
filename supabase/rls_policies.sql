@@ -44,10 +44,13 @@ $$ LANGUAGE SQL SECURITY DEFINER STABLE SET search_path = public, auth;
 -- ============================================================
 -- COMPANIES TABLE POLICIES
 -- ============================================================
--- We allow public read access to verify join_code during signup
+-- We allow read access to companies ONLY if the user is authenticated 
+-- or if they are providing a valid join_code (checked via a function or just restricted)
 DROP POLICY IF EXISTS "companies_read_by_join_code" ON public.companies;
 CREATE POLICY "companies_read_by_join_code" ON public.companies 
-  FOR SELECT USING (true);
+  FOR SELECT USING (
+    auth.role() = 'authenticated' -- Logged in users can see companies
+  );
 
 -- ============================================================
 -- ROLES TABLE POLICIES (Global)
@@ -65,10 +68,10 @@ DROP POLICY IF EXISTS "departments_read_all" ON public.departments;
 CREATE POLICY "departments_read_all" ON public.departments 
   FOR SELECT USING (company_id = get_my_company());
 
--- Allow anonymous users to read departments during employee signup
+-- Allow anonymous users to read departments ONLY if they are signing up (rarely needed if we join)
 DROP POLICY IF EXISTS "departments_anon_read" ON public.departments;
 CREATE POLICY "departments_anon_read" ON public.departments
-  FOR SELECT TO anon USING (true);
+  FOR SELECT TO authenticated USING (company_id = get_my_company());
 
 DROP POLICY IF EXISTS "departments_admin_all" ON public.departments;
 CREATE POLICY "departments_admin_all" ON public.departments 
@@ -364,7 +367,9 @@ CREATE POLICY "notif_own_update" ON public.notifications
 
 DROP POLICY IF EXISTS "notif_system_insert" ON public.notifications;
 CREATE POLICY "notif_system_insert" ON public.notifications
-  FOR INSERT WITH CHECK (true);
+  FOR INSERT WITH CHECK (
+    auth.role() = 'authenticated' AND company_id = get_my_company()
+  );
 
 -- ============================================================
 -- CAREER GOALS POLICIES
@@ -392,4 +397,17 @@ DROP POLICY IF EXISTS "storage_employee_upload" ON storage.objects;
 CREATE POLICY "storage_employee_upload" ON storage.objects
   FOR INSERT WITH CHECK (
     bucket_id = 'project-files' AND auth.uid()::text = (storage.foldername(name))[1]
+  );
+
+DROP POLICY IF EXISTS "storage_view_company_files" ON storage.objects;
+CREATE POLICY "storage_view_company_files" ON storage.objects
+  FOR SELECT USING (
+    bucket_id = 'project-files' AND (
+      auth.uid()::text = (storage.foldername(name))[1] -- Own files
+      OR EXISTS ( -- Or files from someone in the same company
+        SELECT 1 FROM public.users u
+        WHERE u.id::text = (storage.foldername(name))[1]
+        AND u.company_id = (SELECT company_id FROM public.users WHERE id = auth.uid())
+      )
+    )
   );

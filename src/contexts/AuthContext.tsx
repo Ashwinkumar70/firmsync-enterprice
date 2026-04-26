@@ -33,7 +33,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .single();
 
     if (!fullError) {
-      console.log('[AuthContext] Fetched full user profile:', fullData);
       return fullData as UserProfile;
     }
 
@@ -50,7 +49,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
 
-    console.log('[AuthContext] Fetched basic user profile:', basicData);
     return basicData as UserProfile;
   };
 
